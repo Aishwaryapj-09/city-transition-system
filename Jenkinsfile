@@ -6,6 +6,7 @@ pipeline {
     }
 
     stages {
+
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
@@ -16,7 +17,7 @@ pipeline {
 
         stage('Build Success') {
             steps {
-                echo 'Build Completed Successfully!'
+                echo 'CI Build Completed Successfully!'
             }
         }
     }
