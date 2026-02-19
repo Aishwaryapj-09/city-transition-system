@@ -2,11 +2,11 @@ pipeline {
     agent {
         docker {
             image 'node:18'
+            args '-u root'
         }
     }
 
     stages {
-
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
@@ -17,7 +17,7 @@ pipeline {
 
         stage('Build Success') {
             steps {
-                echo 'CI Build Completed Successfully!'
+                echo 'Build Successful!'
             }
         }
     }
