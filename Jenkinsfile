@@ -1,8 +1,11 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'
+        }
+    }
 
     stages {
-
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
@@ -13,7 +16,7 @@ pipeline {
 
         stage('Build Success') {
             steps {
-                echo 'Backend build successful'
+                echo 'Build Completed Successfully!'
             }
         }
     }
