@@ -1,16 +1,12 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'
-            args '-u root'
-        }
-    }
+    agent any
 
     stages {
-        stage('Install Dependencies') {
+
+        stage('Install Dependencies using Docker') {
             steps {
                 dir('backend') {
-                    sh 'npm install'
+                    sh 'docker run --rm -v $PWD:/app -w /app node:18 npm install'
                 }
             }
         }
@@ -20,5 +16,6 @@ pipeline {
                 echo 'Build Successful!'
             }
         }
+
     }
 }
