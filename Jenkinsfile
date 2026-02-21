@@ -3,7 +3,7 @@ pipeline {
 
     stages {
 
-        stage('Install Backend Dependencies using Docker') {
+        stage('Install Dependencies') {
             steps {
                 dir('backend') {
                     bat 'docker run --rm -v "%cd%":/app -w /app node:18 npm install'
@@ -11,9 +11,11 @@ pipeline {
             }
         }
 
-        stage('Build Successful') {
+        stage('Audit Security') {
             steps {
-                echo 'Docker-based CI Successful'
+                dir('backend') {
+                    bat 'docker run --rm -v "%cd%":/app -w /app node:18 npm audit --audit-level=high'
+                }
             }
         }
 
