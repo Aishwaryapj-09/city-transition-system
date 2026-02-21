@@ -3,17 +3,17 @@ pipeline {
 
     stages {
 
-        stage('Install Dependencies using Docker') {
+        stage('Install Backend Dependencies using Docker') {
             steps {
                 dir('backend') {
-                    sh 'docker run --rm -v $PWD:/app -w /app node:18 npm install'
+                    bat 'docker run --rm -v "%cd%":/app -w /app node:18 npm install'
                 }
             }
         }
 
-        stage('Build Success') {
+        stage('Build Successful') {
             steps {
-                echo 'Build Successful!'
+                echo 'Docker-based CI Successful'
             }
         }
 
