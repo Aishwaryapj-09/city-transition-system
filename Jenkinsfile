@@ -1,23 +1,37 @@
 pipeline {
-    agent any
+  agent any
 
-    stages {
+  stages {
 
-        stage('Install Dependencies') {
-            steps {
-                dir('backend') {
-                    bat 'docker run --rm -v "%cd%":/app -w /app node:18 npm install'
-                }
-            }
-        }
-
-        stage('Audit Security') {
-            steps {
-                dir('backend') {
-                    bat 'docker run --rm -v "%cd%":/app -w /app node:18 npm audit --audit-level=high'
-                }
-            }
-        }
-
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
+
+    stage('Install Dependencies') {
+      steps {
+        dir('backend') {
+          sh 'npm install'
+        }
+      }
+    }
+
+    stage('Run Tests') {
+      steps {
+        dir('backend') {
+          sh 'npm test'
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Build Successful!'
+    }
+    failure {
+      echo 'Build Failed!'
+    }
+  }
 }
