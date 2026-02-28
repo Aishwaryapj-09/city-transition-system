@@ -12,7 +12,7 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         dir('backend') {
-          sh 'npm install'
+          bat 'npm install'
         }
       }
     }
@@ -20,7 +20,7 @@ pipeline {
     stage('Run Tests') {
       steps {
         dir('backend') {
-          sh 'npm test'
+          bat 'npm test'
         }
       }
     }
