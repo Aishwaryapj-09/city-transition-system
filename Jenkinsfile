@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  environment {
+    NODE_ENV = "test"
+  }
+
   stages {
 
     stage('Checkout') {
@@ -24,14 +28,18 @@ pipeline {
         }
       }
     }
+
+    stage('Security Audit') {
+      steps {
+        dir('backend') {
+          bat 'npm audit --audit-level=high'
+        }
+      }
+    }
   }
 
   post {
-    success {
-      echo 'Build Successful!'
-    }
-    failure {
-      echo 'Build Failed!'
-    }
+    success { echo 'Pipeline Successful!' }
+    failure { echo 'Pipeline Failed!' }
   }
 }
