@@ -21,7 +21,15 @@ pipeline {
       }
     }
 
-    stage('Run Tests') {
+    stage('Lint Code') {
+      steps {
+        dir('backend') {
+          bat 'npm run lint'
+        }
+      }
+    }
+
+    stage('Run Unit Tests') {
       steps {
         dir('backend') {
           bat 'npm test'
@@ -39,7 +47,11 @@ pipeline {
   }
 
   post {
-    success { echo 'Pipeline Successful!' }
-    failure { echo 'Pipeline Failed!' }
+    success {
+      echo 'CI Passed – Accommodation Feature Secured'
+    }
+    failure {
+      echo 'CI Failed – Fix Issues'
+    }
   }
 }
