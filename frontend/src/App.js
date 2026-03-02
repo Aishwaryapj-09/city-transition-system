@@ -1,25 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import AddListing from "./pages/AddListing";
-import Listings from "./pages/Listings";
-
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/" />;
-};
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Listings />} />
-        <Route
-          path="/add"
-          element={
-            <ProtectedRoute>
-              <AddListing />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
   );

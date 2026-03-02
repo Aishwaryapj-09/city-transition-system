@@ -10,6 +10,12 @@ const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
 
+
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
+
 // Security Middlewares
 app.use(helmet());
 app.use(cors());
