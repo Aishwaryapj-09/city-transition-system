@@ -1,61 +1,77 @@
-import React, { useState, useEffect } from "react";
-import API from "../utils/api";
+import React,{useState,useEffect} from "react";
 import ListingCard from "../components/ListingCard";
 
-const Listings = () => {
-  const [listings, setListings] = useState([]);
-  const [filters, setFilters] = useState({
-    location: "",
-    minPrice: "",
-    maxPrice: "",
-    type: ""
-  });
+const Listings = ()=>{
 
-  const fetchListings = async () => {
-    try {
-      const query = new URLSearchParams(filters).toString();
-      const res = await API.get(`/listings?${query}`);
-      setListings(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+const [listings,setListings] = useState([]);
 
-  useEffect(() => {
-    fetchListings();
-  }, []);
+const [filters,setFilters] = useState({
 
-  const handleChange = (e) => {
-    setFilters({
-      ...filters,
-      [e.target.name]: e.target.value
-    });
-  };
+minPrice:"",
+maxPrice:"",
+type:""
 
-  return (
-    <div>
-      <h2>Search Listings</h2>
+});
 
-      <input name="location" placeholder="Location" onChange={handleChange} />
-      <input name="minPrice" type="number" placeholder="Min Price" onChange={handleChange} />
-      <input name="maxPrice" type="number" placeholder="Max Price" onChange={handleChange} />
+const fetchListings = async ()=>{
 
-      <select name="type" onChange={handleChange}>
-        <option value="">All</option>
-        <option value="PG">PG</option>
-        <option value="House">House</option>
-        <option value="Hostel">Hostel</option>
-      </select>
+const query = new URLSearchParams(filters).toString();
 
-      <button onClick={fetchListings}>Search</button>
+const res = await fetch(`http://localhost:5000/api/listings?${query}`);
 
-      <div>
-        {listings.map((listing) => (
-          <ListingCard key={listing._id} listing={listing} />
-        ))}
-      </div>
-    </div>
-  );
+const data = await res.json();
+
+setListings(data);
+
+};
+
+useEffect(()=>{
+
+fetchListings();
+
+},[]);
+
+return(
+
+<div>
+
+<h2>Listings</h2>
+
+<input
+placeholder="Min Price"
+onChange={(e)=>setFilters({...filters,minPrice:e.target.value})}
+/>
+
+<input
+placeholder="Max Price"
+onChange={(e)=>setFilters({...filters,maxPrice:e.target.value})}
+/>
+
+<select
+onChange={(e)=>setFilters({...filters,type:e.target.value})}
+>
+
+<option value="">All</option>
+<option value="PG">PG</option>
+<option value="Hostel">Hostel</option>
+<option value="House">House</option>
+
+</select>
+
+<button onClick={fetchListings}>
+Search
+</button>
+
+{listings.map(l=>(
+
+<ListingCard key={l._id} listing={l}/>
+
+))}
+
+</div>
+
+);
+
 };
 
 export default Listings;

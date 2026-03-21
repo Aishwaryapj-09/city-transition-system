@@ -3,10 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { registerUser } from "../utils/api";
 
 function Register() {
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("visitor");
   const [message, setMessage] = useState("");
+
   const navigate = useNavigate();
 
   const handleRegister = async () => {
@@ -17,28 +20,35 @@ function Register() {
     }
 
     try {
-      const response = await registerUser(name, email, password);
+
+      const response = await registerUser(name, email, password, role);
 
       console.log("REGISTER RESPONSE:", response);
 
       if (response.status === 201) {
         setMessage("Registration successful! Redirecting...");
         setTimeout(() => navigate("/login"), 1500);
+
       } else if (response.status === 400) {
         setMessage(response.data.message || "User already exists.");
+
       } else {
         setMessage("Something went wrong.");
       }
 
     } catch (error) {
+
       console.error(error);
       setMessage("Server error. Try again.");
+
     }
   };
 
   return (
     <div className="container">
+
       <div className="card">
+
         <h2>Create Account</h2>
 
         <input
@@ -60,9 +70,22 @@ function Register() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button onClick={handleRegister}>Register</button>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          style={{ marginTop: "10px" }}
+        >
+          <option value="visitor">Visitor</option>
+          <option value="owner">Property Owner</option>
+        </select>
 
-        <p style={{ marginTop: "15px" }}>{message}</p>
+        <button onClick={handleRegister}>
+          Register
+        </button>
+
+        <p style={{ marginTop: "15px" }}>
+          {message}
+        </p>
 
         <p style={{ marginTop: "20px" }}>
           Already registered?{" "}
@@ -70,7 +93,9 @@ function Register() {
             Sign In
           </Link>
         </p>
+
       </div>
+
     </div>
   );
 }

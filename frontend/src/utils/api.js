@@ -1,6 +1,8 @@
 const BASE_URL = "http://localhost:5000/api/auth";
 
-export async function registerUser(name, email, password) {
+// Register User
+export async function registerUser(name, email, password, role) {
+
   const res = await fetch(`${BASE_URL}/register`, {
     method: "POST",
     headers: {
@@ -9,7 +11,8 @@ export async function registerUser(name, email, password) {
     body: JSON.stringify({
       name,
       email,
-      password
+      password,
+      role
     })
   });
 
@@ -21,6 +24,7 @@ export async function registerUser(name, email, password) {
   };
 }
 
+// Login User
 export async function loginUser(email, password) {
   const res = await fetch(`${BASE_URL}/login`, {
     method: "POST",
@@ -34,9 +38,5 @@ export async function loginUser(email, password) {
   });
 
   const data = await res.json();
-
-  return {
-    status: res.status,
-    data: data
-  };
+  return data;
 }

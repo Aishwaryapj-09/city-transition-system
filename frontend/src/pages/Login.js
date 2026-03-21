@@ -8,18 +8,49 @@ function Login() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    const data = await loginUser(email, password);
+ const handleLogin = async () => {
 
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      navigate("/dashboard");
-    } else if (data.message === "Invalid credentials") {
-      setMessage("Invalid email or password.");
-    } else {
-      setMessage("User not found. Please create an account.");
-    }
-  };
+  const data = await loginUser(email, password);
+
+  console.log("LOGIN RESPONSE:", data);
+
+  if (data.token) {
+
+    localStorage.setItem("token", data.token);
+
+    // Handle both backend formats
+    const user = data.user ? data.user : data;
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(user)
+    );
+
+    localStorage.setItem(
+      "role",
+      user.role
+    );
+
+    localStorage.setItem(
+      "userId",
+      user._id
+    );
+
+    navigate("/dashboard");
+
+  } 
+  else if (data.message === "Invalid credentials") {
+
+    setMessage("Invalid email or password.");
+
+  } 
+  else {
+
+    setMessage("User not found. Please create an account.");
+
+  }
+
+};
 
   return (
     <div className="container">
