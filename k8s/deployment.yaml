@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accommodation-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: accommodation
+  template:
+    metadata:
+      labels:
+        app: accommodation
+    spec:
+      containers:
+        - name: app
+          image: your-dockerhub-username/accommodation-app:latest
+          ports:
+            - containerPort: 3000
