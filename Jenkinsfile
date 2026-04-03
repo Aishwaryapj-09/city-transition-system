@@ -53,16 +53,20 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'PASS')]) {
-                    bat """
-                        echo %PASS% | docker login -u your-dockerhub-username --password-stdin
-                        docker push %IMAGE_NAME%:%TAG%
-                    """
-                }
-            }
+       stage('Push Docker Image') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'dockerhub-pass',
+            usernameVariable: 'USER',
+            passwordVariable: 'PASS'
+        )]) {
+            bat """
+                echo %PASS% | docker login -u %USER% --password-stdin
+                docker push %IMAGE_NAME%:%TAG%
+            """
         }
+    }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
