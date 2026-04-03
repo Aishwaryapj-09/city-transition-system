@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NODE_ENV = "test"
-        IMAGE_NAME = "your-dockerhub-username/accommodation-app"
+        IMAGE_NAME = "aishwaryapj09/city-transition-sys"
         TAG = "${BUILD_NUMBER}"
     }
 
