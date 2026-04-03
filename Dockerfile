@@ -2,11 +2,17 @@ FROM node:18
 
 WORKDIR /app
 
-COPY backend/package*.json ./
-RUN npm install
+# Copy only package files first (for caching)
+COPY backend/package*.json ./backend/
 
-COPY backend/ .
+# Install dependencies
+RUN cd backend && npm install
 
-EXPOSE 3000
+# Copy remaining code
+COPY . .
 
-CMD ["node", "server.js"]
+WORKDIR /app/backend
+
+EXPOSE 5000
+
+CMD ["npm", "start"]
