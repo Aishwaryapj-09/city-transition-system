@@ -17,10 +17,10 @@ pipeline {
         }
 
         stage('Build Backend') {
-            steps {
-                bat "docker build -t %BACKEND_IMAGE%:%TAG% ./backend"
-            }
-        }
+    steps {
+        bat "docker build --no-cache -t %BACKEND_IMAGE%:%TAG% ./backend"
+    }
+}
 
        stage('Build Frontend') {
     steps {

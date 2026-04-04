@@ -7,7 +7,7 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build   # 🔥 MUST
+RUN npm run build   # 🔥 VERY IMPORTANT
 
 RUN npm install -g serve
 
