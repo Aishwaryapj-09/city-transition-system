@@ -14,16 +14,12 @@ spec:
     spec:
       containers:
         - name: backend
-          image: aishwaryapj09/city-transition-backend:33
+          image: aishwaryapj09/city-transition-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
-
           env:
             - name: PORT
               value: "5000"
-
-            # 🔥 IMPORTANT → replace with your actual MongoDB URI
             - name: MONGO_URI
               value: "mongodb://host.docker.internal:27017/city-transition-system"
-
-          imagePullPolicy: Always

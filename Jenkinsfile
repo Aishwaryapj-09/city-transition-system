@@ -4,7 +4,8 @@ pipeline {
     environment {
         BACKEND_IMAGE = "aishwaryapj09/city-transition-backend"
         FRONTEND_IMAGE = "aishwaryapj09/city-transition-frontend"
-        TAG = "${BUILD_NUMBER}"
+        TAG = "latest"
+        KUBECONFIG = "C:\\Users\\LENOVO\\.kube\\config"
     }
 
     stages {
@@ -45,7 +46,10 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                bat 'kubectl apply -f k8s/'
+                bat 'kubectl config use-context docker-desktop'
+                bat 'kubectl apply -f k8s/ --validate=false'
+                bat 'kubectl rollout restart deployment backend'
+                bat 'kubectl rollout restart deployment frontend'
             }
         }
     }
