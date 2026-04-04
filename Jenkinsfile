@@ -22,11 +22,11 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
-            steps {
-                bat "docker build -t %FRONTEND_IMAGE%:%TAG% ./frontend"
-            }
-        }
+       stage('Build Frontend') {
+    steps {
+        bat "docker build --no-cache -t %FRONTEND_IMAGE%:latest ./frontend"
+    }
+}
 
         stage('Push Images') {
             steps {
