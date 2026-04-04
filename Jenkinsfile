@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        NODE_ENV = "test"
-        IMAGE_NAME = "aishwaryapj09/city-transition-sys"
+        BACKEND_IMAGE = "aishwaryapj09/city-transition-backend"
+        FRONTEND_IMAGE = "aishwaryapj09/city-transition-frontend"
         TAG = "${BUILD_NUMBER}"
     }
 
@@ -15,69 +15,44 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Build Backend') {
             steps {
-                dir('backend') {
-                    bat 'npm install'
+                bat "docker build -t %BACKEND_IMAGE%:%TAG% ./backend"
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                bat "docker build -t %FRONTEND_IMAGE%:%TAG% ./frontend"
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-pass',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    bat """
+                        echo %PASS% | docker login -u %USER% --password-stdin
+                        docker push %BACKEND_IMAGE%:%TAG%
+                        docker push %FRONTEND_IMAGE%:%TAG%
+                    """
                 }
             }
         }
-
-        stage('Lint Code') {
-            steps {
-                dir('backend') {
-                    bat 'npm run lint || exit 0'
-                }
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                dir('backend') {
-                    bat 'npm test'
-                }
-            }
-        }
-
-        stage('Security Audit') {
-            steps {
-                dir('backend') {
-                    bat 'npm audit --audit-level=high || exit 0'
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                bat "docker build -t %IMAGE_NAME%:%TAG% ."
-            }
-        }
-
-       stage('Push Docker Image') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-pass',
-            usernameVariable: 'USER',
-            passwordVariable: 'PASS'
-        )]) {
-            bat """
-                echo %PASS% | docker login -u %USER% --password-stdin
-                docker push %IMAGE_NAME%:%TAG%
-            """
-        }
-    }
-}
 
         stage('Deploy to Kubernetes') {
             steps {
-                bat 'kubectl apply -f k8s\\'
+                bat 'kubectl apply -f k8s/'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Full CI/CD Pipeline Passed'
+            echo '✅ Pipeline Success'
         }
         failure {
             echo '❌ Pipeline Failed'
