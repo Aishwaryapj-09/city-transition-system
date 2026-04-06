@@ -37,7 +37,8 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
     }
 
   } else {
-    // 🔥 API: always random ₹500–₹5000
+    // 🔥 API: always random ₹50
+    // 0–₹5000
     price = Math.floor(Math.random() * 4500) + 500;
   }
 

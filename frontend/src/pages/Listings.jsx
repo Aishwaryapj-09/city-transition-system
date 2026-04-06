@@ -17,7 +17,7 @@ const fetchListings = async ()=>{
 
 const query = new URLSearchParams(filters).toString();
 
-const res = await fetch(`http://localhost:5000/api/listings?${query}`);
+const res = await fetch(`http://localhost:30008/api/listings?${query}`);
 
 const data = await res.json();
 

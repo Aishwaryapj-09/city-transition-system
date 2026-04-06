@@ -24,7 +24,7 @@ function MyListings() {
       }
 
       const res = await axios.get(
-        "http://localhost:5000/api/listings/my",
+        "http://localhost:30008/api/listings/my",
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -52,7 +52,7 @@ function MyListings() {
       const token = localStorage.getItem("token");
 
       await axios.delete(
-        `http://localhost:5000/api/listings/${id}`,
+        `http://localhost:30008/api/listings/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`

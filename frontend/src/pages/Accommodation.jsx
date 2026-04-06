@@ -30,14 +30,14 @@ function Accommodation() {
 
       // 🔹 1. Existing API (hotels/hostels/apartments)
       const res1 = await axios.get(
-        `http://localhost:5000/api/accommodation?location=${encodeURIComponent(location)}`
+        `http://localhost:30008/api/accommodation?location=${encodeURIComponent(location)}`
       );
 
       const data = res1.data;
 
       // 🔹 2. YOUR LOCAL LISTINGS
       const res2 = await axios.get(
-        `http://localhost:5000/api/listings/search?location=${encodeURIComponent(location)}`
+        `http://localhost:30008/api/listings/search?location=${encodeURIComponent(location)}`
       );
 
       const localListings = res2.data;

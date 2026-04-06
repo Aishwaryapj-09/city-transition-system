@@ -16,7 +16,7 @@ function VerifyListings() {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        "http://localhost:5000/api/listings/pending",
+        "http://localhost:30008/api/listings/pending",
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -42,7 +42,7 @@ function VerifyListings() {
       const token = localStorage.getItem("token");
 
       await axios.patch(
-        `http://localhost:5000/api/listings/verify/${id}`,
+        `http://localhost:30008/api/listings/verify/${id}`,
         {},
         {
           headers: {

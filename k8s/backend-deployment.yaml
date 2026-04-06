@@ -23,3 +23,5 @@ spec:
               value: "5000"
             - name: MONGO_URI
               value: "mongodb://host.docker.internal:27017/city-transition-system"
+            - name: JWT_SECRET
+              value: "mysecretkey123" 
