@@ -1,17 +1,12 @@
+
 pipeline {
     agent any
 
     parameters {
         booleanParam(
-            name: 'DEPLOY',
-            defaultValue: false,
-            description: 'Deploy to Kubernetes? (unchecked = only build & push)'
-        )
-
-        booleanParam(
             name: 'CLEANUP',
             defaultValue: false,
-            description: 'Delete Kubernetes deployment after pipeline?'
+            description: 'Stop (delete) Kubernetes deployment?'
         )
     }
 
@@ -58,10 +53,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            when {
-                expression { params.DEPLOY == true }
-            }
+        stage('Deploy to Kubernetes (AUTO)') {
             steps {
                 bat 'kubectl config use-context docker-desktop'
                 bat 'kubectl apply -f k8s/ --validate=false'
@@ -70,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('Cleanup Kubernetes (Optional)') {
+        stage('Cleanup (User Controlled Stop)') {
             when {
                 expression { params.CLEANUP == true }
             }
@@ -82,7 +74,6 @@ pipeline {
         stage('Info') {
             steps {
                 echo "----------------------------------"
-                echo "DEPLOY = ${params.DEPLOY}"
                 echo "CLEANUP = ${params.CLEANUP}"
                 echo "----------------------------------"
             }
@@ -101,3 +92,4 @@ pipeline {
         }
     }
 }
+
