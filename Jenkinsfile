@@ -2,14 +2,6 @@
 pipeline {
     agent any
 
-    parameters {
-        booleanParam(
-            name: 'CLEANUP',
-            defaultValue: false,
-            description: 'Stop (delete) Kubernetes deployment?'
-        )
-    }
-
     environment {
         BACKEND_IMAGE = "aishwaryapj09/city-transition-backend"
         FRONTEND_IMAGE = "aishwaryapj09/city-transition-frontend"
@@ -53,7 +45,8 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes (AUTO)') {
+        // 🔥 ALWAYS DEPLOY (AUTO CONTAINER CREATION)
+        stage('Deploy to Kubernetes') {
             steps {
                 bat 'kubectl config use-context docker-desktop'
                 bat 'kubectl apply -f k8s/ --validate=false'
@@ -62,19 +55,10 @@ pipeline {
             }
         }
 
-        stage('Cleanup (User Controlled Stop)') {
-            when {
-                expression { params.CLEANUP == true }
-            }
-            steps {
-                bat 'kubectl delete -f k8s/ --ignore-not-found=true'
-            }
-        }
-
         stage('Info') {
             steps {
                 echo "----------------------------------"
-                echo "CLEANUP = ${params.CLEANUP}"
+                echo "AUTO DEPLOY ENABLED"
                 echo "----------------------------------"
             }
         }
