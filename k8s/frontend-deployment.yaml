@@ -18,3 +18,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
+
+      # 🔥 ADD THIS ONLY
+      imagePullSecrets:
+        - name: dockerhub-secret

@@ -29,21 +29,24 @@ pipeline {
             }
         }
 
-        stage('Push Images') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-pass',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
-                    bat """
-                        echo %PASS% | docker login -u %USER% --password-stdin
-                        docker push %BACKEND_IMAGE%:%TAG%
-                        docker push %FRONTEND_IMAGE%:%TAG%
-                    """
-                }
-            }
+       stage('Push Images') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'dockerhub-pass',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+        )]) {
+            bat """
+                docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+
+                docker push %BACKEND_IMAGE%:%TAG%
+                docker push %FRONTEND_IMAGE%:%TAG%
+
+                docker logout
+            """
         }
+    }
+}
 
         // 🔥 ALWAYS DEPLOY (AUTO CONTAINER CREATION)
         stage('Deploy to Kubernetes') {

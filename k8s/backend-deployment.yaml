@@ -24,4 +24,8 @@ spec:
             - name: MONGO_URI
               value: "mongodb://host.docker.internal:27017/city-transition-system"
             - name: JWT_SECRET
-              value: "mysecretkey123" 
+              value: "mysecretkey123"
+
+      # 🔥 ADD THIS BLOCK (IMPORTANT FOR FRIEND SYSTEM)
+      imagePullSecrets:
+        - name: dockerhub-secret
