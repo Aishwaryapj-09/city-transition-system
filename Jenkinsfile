@@ -63,13 +63,16 @@ pipeline {
       stage('SonarQube Analysis') {
     steps {
         withSonarQubeEnv('sonarqube-server') {
-            dir('backend') {
-                bat """
-                npx sonar-scanner ^
-                -Dsonar.projectKey=city-transition ^
-                -Dsonar.sources=. ^
-                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-                """
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                dir('backend') {
+                    bat """
+                    npx sonar-scanner ^
+                    -Dsonar.projectKey=city-transition ^
+                    -Dsonar.sources=. ^
+                    -Dsonar.login=%SONAR_TOKEN% ^
+                    -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+                    """
+                }
             }
         }
     }
