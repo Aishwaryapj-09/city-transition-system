@@ -12,12 +12,7 @@
     "lint": "eslint ."
   },
 
-  "jest": {
-    "testEnvironment": "node",
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/setup.js"
-    ]
-  },
+ 
 
   "keywords": [],
   "author": "",
