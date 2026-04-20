@@ -61,20 +61,19 @@ pipeline {
 
         // ✅ 6. SONARQUBE ANALYSIS
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    dir('backend') {
-                        bat """
-                        sonar-scanner ^
-                        -Dsonar.projectKey=city-transition ^
-                        -Dsonar.sources=. ^
-                        -Dsonar.host.url=http://localhost:9000 ^
-                        -Dsonar.login=YOUR_SONAR_TOKEN
-                        """
-                    }
-                }
+    steps {
+        withSonarQubeEnv('sonarqube-server') {
+            dir('backend') {
+                bat """
+                npx sonar-scanner ^
+                -Dsonar.projectKey=city-transition ^
+                -Dsonar.sources=. ^
+                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+                """
             }
         }
+    }
+}
 
         // ✅ 7. SECURITY SCAN
         stage('Security Scan') {
