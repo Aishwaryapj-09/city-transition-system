@@ -1,9 +1,7 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'nodejs'   // make sure configured in Jenkins
-    }
+   
 
     environment {
         BACKEND_IMAGE = "aishwaryapj09/city-transition-backend"
