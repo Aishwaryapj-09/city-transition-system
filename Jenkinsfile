@@ -67,13 +67,14 @@ pipeline {
                 bat """
                 npx sonar-scanner ^
                 -Dsonar.projectKey=city-transition ^
+                -Dsonar.sources=. ^
+                -Dsonar.host.url=http://host.docker.internal:9000 ^
                 -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
                 """
             }
         }
     }
 }
-
         // ✅ 7. SECURITY SCAN
         stage('Security Scan') {
     steps {
