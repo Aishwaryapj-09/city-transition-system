@@ -60,14 +60,13 @@ pipeline {
         }
 
         // ✅ 6. SONARQUBE ANALYSIS
-        stage('SonarQube Analysis') {
+       stage('SonarQube Analysis') {
     steps {
         withSonarQubeEnv('sonarqube-server') {
             dir('backend') {
                 bat """
                 npx sonar-scanner ^
                 -Dsonar.projectKey=city-transition ^
-                -Dsonar.sources=. ^
                 -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
                 """
             }
