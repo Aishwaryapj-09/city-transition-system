@@ -1,7 +1,7 @@
 const request = require("supertest");
-const app = require("../app");
+const app = require("../../app");
 
-describe("Auth System", () => {
+describe("Auth API", () => {
 
   let token;
   const email = `user${Date.now()}@test.com`;
@@ -27,7 +27,21 @@ describe("Auth System", () => {
       });
 
     expect(res.statusCode).toBe(200);
+    expect(res.body.token).toBeDefined();
+
     token = res.body.token;
+  });
+
+  // ✅ NEGATIVE CASE
+  it("should fail login with wrong password", async () => {
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email,
+        password: "wrong"
+      });
+
+    expect(res.statusCode).toBe(401);
   });
 
   it("should access protected route", async () => {
@@ -38,7 +52,7 @@ describe("Auth System", () => {
     expect(res.statusCode).toBe(200);
   });
 
-  it("should reject without token", async () => {
+  it("should reject access without token", async () => {
     const res = await request(app)
       .get("/api/auth/protected");
 
