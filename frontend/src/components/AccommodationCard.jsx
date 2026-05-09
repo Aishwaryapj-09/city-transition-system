@@ -73,7 +73,7 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
 
         {showDetails && (
           <div className="details-box">
-            <p>{place.description || place.category || "Accommodation result from live city map data."}</p>
+            <p>{place.description || place.category || "Accommodation details"}</p>
             {mapUrl && (
               <a className="text-link" href={mapUrl} target="_blank" rel="noreferrer">
                 Open in map

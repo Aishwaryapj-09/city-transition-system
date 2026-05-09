@@ -39,7 +39,7 @@ function Dashboard() {
               </button>
 
               <p style={{ marginTop: "10px" }}>
-                Search live accommodation and nearby essentials around your selected city area.
+                Search accommodation and nearby essentials around your selected city area.
               </p>
             </>
 

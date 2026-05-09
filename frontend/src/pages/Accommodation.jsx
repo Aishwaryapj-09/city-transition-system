@@ -3,7 +3,7 @@ import AccommodationCard from "../components/AccommodationCard";
 import API from "../services/api";
 
 function Accommodation() {
-  const [area, setArea] = useState("Yeshwanthpur, Bengaluru");
+  const [area, setArea] = useState("");
   const [coordinates, setCoordinates] = useState("");
   const [hotels, setHotels] = useState([]);
   const [hostels, setHostels] = useState([]);
@@ -37,7 +37,7 @@ function Accommodation() {
     }
 
     try {
-      setStatus("Searching live city accommodation data...");
+      setStatus("Searching accommodation...");
 
       const response = await API.get("/accommodation", {
         params: {
@@ -68,10 +68,10 @@ function Accommodation() {
 
         setCoordinates(`${lat},${lon}`);
         setArea("");
-        setStatus("Current location selected");
+        setStatus("Current location selected. Click Find Accommodation.");
       },
       () => {
-        setStatus("Location permission was not available. Enter an area name instead.");
+        setStatus("Location permission was blocked. Allow location access or enter a place name.");
       }
     );
   };
@@ -79,6 +79,11 @@ function Accommodation() {
   const useAreaSearch = (event) => {
     setArea(event.target.value);
     setCoordinates("");
+  };
+
+  const clearLocation = () => {
+    setCoordinates("");
+    setStatus("");
   };
 
   const applyFilters = (places) => {
@@ -120,49 +125,68 @@ function Accommodation() {
       <h1>Accommodation Finder</h1>
       <p>Find stays around a place or your current location.</p>
 
-      <div className="search-area">
-        <input
-          aria-label="Area name"
-          placeholder="Enter place name"
-          value={area}
-          onChange={useAreaSearch}
-        />
+      <div className="finder-panel">
+        <div className="field-block">
+          <label htmlFor="accommodation-place">Enter place name</label>
+          <input
+            id="accommodation-place"
+            aria-label="Area name"
+            placeholder="Enter place name"
+            value={area}
+            onChange={useAreaSearch}
+            disabled={Boolean(coordinates)}
+          />
+        </div>
 
-        <button className="loc-btn" onClick={useLocation}>
-          Use My Location
-        </button>
+        <div className="action-row">
+          <button className="loc-btn" onClick={useLocation} disabled={Boolean(area.trim())}>
+            Use My Location
+          </button>
+
+          {coordinates && (
+            <button className="clear-btn" onClick={clearLocation}>
+              Clear Location
+            </button>
+          )}
+        </div>
 
         {coordinates && (
-          <p className="status-text">Using current location: {coordinates}</p>
+          <p className="status-text compact-status">Current location selected</p>
         )}
 
-        <button className="search-btn" onClick={searchPlaces}>
-          Search
+        <button className="search-btn primary-action" onClick={searchPlaces}>
+          Find Accommodation
         </button>
       </div>
 
-      <div className="filter-bar">
-        <select value={priceFilter} onChange={(event) => setPriceFilter(event.target.value)}>
-          <option value="">Price</option>
-          <option value="2000-6000">Rs 2000 - Rs 6000</option>
-          <option value="6000-12000">Rs 6000 - Rs 12000</option>
-          <option value="12000-18000">Rs 12000 - Rs 18000</option>
-          <option value="18000-24000">Rs 18000 - Rs 24000</option>
-          <option value="24000-30000">Rs 24000 - Rs 30000</option>
-          <option value="30000+">Above Rs 30000</option>
-        </select>
+      <div className="filter-panel">
+        <div className="field-block">
+          <label htmlFor="accommodation-price">Price</label>
+          <select id="accommodation-price" value={priceFilter} onChange={(event) => setPriceFilter(event.target.value)}>
+            <option value="">Any price</option>
+            <option value="2000-6000">Rs 2000 - Rs 6000</option>
+            <option value="6000-12000">Rs 6000 - Rs 12000</option>
+            <option value="12000-18000">Rs 12000 - Rs 18000</option>
+            <option value="18000-24000">Rs 18000 - Rs 24000</option>
+            <option value="24000-30000">Rs 24000 - Rs 30000</option>
+            <option value="30000+">Above Rs 30000</option>
+          </select>
+        </div>
 
-        <select value={distanceFilter} onChange={(event) => setDistanceFilter(event.target.value)}>
-          <option value="">Distance</option>
-          <option value="2">Within 2 km</option>
-          <option value="5">Within 5 km</option>
-          <option value="10">Within 10 km</option>
-          <option value="15">Within 15 km</option>
-          <option value="20">Within 20 km</option>
-          <option value="20+">Greater than 20 km</option>
-        </select>
+        <div className="field-block">
+          <label htmlFor="accommodation-distance">Distance</label>
+          <select id="accommodation-distance" value={distanceFilter} onChange={(event) => setDistanceFilter(event.target.value)}>
+            <option value="">Any distance</option>
+            <option value="2">Within 2 km</option>
+            <option value="5">Within 5 km</option>
+            <option value="10">Within 10 km</option>
+            <option value="15">Within 15 km</option>
+            <option value="20">Within 20 km</option>
+            <option value="20+">Greater than 20 km</option>
+          </select>
+        </div>
 
-        <button onClick={applyFiltersButton}>
+        <button className="filter-action" onClick={applyFiltersButton}>
           Apply Filters
         </button>
       </div>

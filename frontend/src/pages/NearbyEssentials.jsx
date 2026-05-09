@@ -10,7 +10,7 @@ const ESSENTIAL_TYPES = [
 ];
 
 function NearbyEssentials() {
-  const [area, setArea] = useState("Yeshwanthpur, Bengaluru");
+  const [area, setArea] = useState("");
   const [coordinates, setCoordinates] = useState("");
   const [type, setType] = useState("hospital");
   const [radius, setRadius] = useState("3000");
@@ -28,10 +28,10 @@ function NearbyEssentials() {
 
         setCoordinates(`${lat},${lng}`);
         setArea("");
-        setStatus("Current location selected");
+        setStatus("Current location selected. Click Find Essentials.");
       },
       () => {
-        setStatus("Location permission was not available. Enter an area name instead.");
+        setStatus("Location permission was blocked. Allow location access or enter a place name.");
       }
     );
   };
@@ -39,6 +39,11 @@ function NearbyEssentials() {
   const useAreaSearch = (event) => {
     setArea(event.target.value);
     setCoordinates("");
+  };
+
+  const clearLocation = () => {
+    setCoordinates("");
+    setStatus("");
   };
 
   const sortResults = (results) => {
@@ -69,7 +74,7 @@ function NearbyEssentials() {
     }
 
     try {
-      setStatus("Searching real nearby essentials...");
+      setStatus("Searching nearby essentials...");
 
       const response = await API.get("/nearby", { params });
       const results = response.data.places || [];
@@ -87,49 +92,71 @@ function NearbyEssentials() {
       <h1>Nearby Essentials Finder</h1>
       <p>Find hospitals, schools, banks, supermarkets and bus stops near a place.</p>
 
-      <div className="search-area essentials-search">
-        <input
-          aria-label="Area name"
-          placeholder="Enter place name"
-          value={area}
-          onChange={useAreaSearch}
-        />
+      <div className="finder-panel essentials-search">
+        <div className="field-block">
+          <label htmlFor="essentials-place">Enter place name</label>
+          <input
+            id="essentials-place"
+            aria-label="Area name"
+            placeholder="Enter place name"
+            value={area}
+            onChange={useAreaSearch}
+            disabled={Boolean(coordinates)}
+          />
+        </div>
 
-        <button className="loc-btn" onClick={useCurrentLocation}>
-          Use My Location
-        </button>
+        <div className="action-row">
+          <button className="loc-btn" onClick={useCurrentLocation} disabled={Boolean(area.trim())}>
+            Use My Location
+          </button>
+
+          {coordinates && (
+            <button className="clear-btn" onClick={clearLocation}>
+              Clear Location
+            </button>
+          )}
+        </div>
 
         {coordinates && (
-          <p className="status-text">Using current location: {coordinates}</p>
+          <p className="status-text compact-status">Current location selected</p>
         )}
 
-        <button className="search-btn" onClick={searchEssentials}>
+        <button className="search-btn primary-action" onClick={searchEssentials}>
           Find Essentials
         </button>
       </div>
 
-      <div className="filter-bar">
-        <select value={type} onChange={(event) => setType(event.target.value)}>
-          {ESSENTIAL_TYPES.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
+      <div className="filter-panel">
+        <div className="field-block">
+          <label htmlFor="essential-type">Essential</label>
+          <select id="essential-type" value={type} onChange={(event) => setType(event.target.value)}>
+            {ESSENTIAL_TYPES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select value={radius} onChange={(event) => setRadius(event.target.value)}>
-          <option value="1000">1 km</option>
-          <option value="3000">3 km</option>
-          <option value="5000">5 km</option>
-          <option value="10000">10 km</option>
-        </select>
+        <div className="field-block">
+          <label htmlFor="essential-radius">Search radius</label>
+          <select id="essential-radius" value={radius} onChange={(event) => setRadius(event.target.value)}>
+            <option value="1000">1 km</option>
+            <option value="3000">3 km</option>
+            <option value="5000">5 km</option>
+            <option value="10000">10 km</option>
+          </select>
+        </div>
 
-        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-          <option value="distance">Nearest first</option>
-          <option value="name">Name A-Z</option>
-        </select>
+        <div className="field-block">
+          <label htmlFor="essential-sort">Sort by</label>
+          <select id="essential-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            <option value="distance">Nearest first</option>
+            <option value="name">Name A-Z</option>
+          </select>
+        </div>
 
-        <button onClick={searchEssentials}>
+        <button className="filter-action" onClick={searchEssentials}>
           Apply Filter
         </button>
       </div>
