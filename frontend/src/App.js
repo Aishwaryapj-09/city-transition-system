@@ -53,6 +53,12 @@ function AdminRoute({ children }) {
   return children;
 }
 
+function FallbackRoute() {
+  const token = localStorage.getItem("token");
+
+  return <Navigate to={token ? "/dashboard" : "/"} />;
+}
+
 
 /* ---------------- APP ---------------- */
 
@@ -98,6 +104,15 @@ function App() {
 
         <Route
           path="/nearby-essentials"
+          element={
+            <ProtectedRoute>
+              <NearbyEssentials />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/nearby"
           element={
             <ProtectedRoute>
               <NearbyEssentials />
@@ -162,7 +177,7 @@ function App() {
 
         {/* FALLBACK ROUTE */}
 
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<FallbackRoute />} />
 
       </Routes>
 

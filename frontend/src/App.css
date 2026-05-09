@@ -51,6 +51,14 @@
   opacity:0.9;
 }
 
+.secondary-btn{
+  background:#155e75;
+}
+
+.feature-btn{
+  background:linear-gradient(90deg,#14b8a6,#0d6efd);
+}
+
 
 /* Section titles */
 
@@ -157,12 +165,22 @@
 display:flex;
 gap:10px;
 margin-bottom:20px;
+flex-wrap:wrap;
 }
 
 .filter-bar select{
 padding:8px;
 border-radius:6px;
 border:none;
+}
+
+.filter-bar button{
+  padding:8px 12px;
+  border-radius:6px;
+  border:none;
+  background:#0d6efd;
+  color:white;
+  cursor:pointer;
 }
 
 .essentials-search select{
@@ -196,6 +214,17 @@ border:none;
   text-align:center;
   text-decoration:none;
   margin-top:14px;
+}
+
+.verified-text{
+  color:lightgreen;
+  font-weight:700;
+}
+
+.text-link{
+  color:#8dd8ff;
+  display:inline-block;
+  margin-top:8px;
 }
 @media (max-width:600px){
 

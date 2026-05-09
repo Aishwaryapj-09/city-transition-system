@@ -1,10 +1,119 @@
-const Listing = require("../models/listing.model");
 const axios = require("axios");
+const Listing = require("../models/listing.model");
+const { calculateDistanceKm } = require("../services/distance.service");
+
+const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+
+function getElementCoordinates(element) {
+  return {
+    lat: element.lat || element.center?.lat,
+    lng: element.lon || element.center?.lon
+  };
+}
+
+function getAccommodationCategory(tags = {}) {
+  if (tags.tourism === "hostel" || tags.tourism === "guest_house") {
+    return "hostel";
+  }
+
+  if (tags.tourism === "hotel") {
+    return "hotel";
+  }
+
+  return "apartment";
+}
+
+function normalizeApiListing(element, origin) {
+  const coordinates = getElementCoordinates(element);
+
+  if (!element.tags?.name || !Number.isFinite(Number(coordinates.lat)) || !Number.isFinite(Number(coordinates.lng))) {
+    return null;
+  }
+
+  const category = getAccommodationCategory(element.tags);
+
+  return {
+    id: `${element.type}-${element.id}`,
+    title: element.tags.name,
+    name: element.tags.name,
+    description: element.tags.tourism || element.tags.building || "Accommodation",
+    category,
+    source: "openstreetmap",
+    lat: Number(coordinates.lat),
+    lon: Number(coordinates.lng),
+    distanceKm: calculateDistanceKm(origin.lat, origin.lng, coordinates.lat, coordinates.lng),
+    location: {
+      type: "Point",
+      coordinates: [Number(coordinates.lng), Number(coordinates.lat)]
+    }
+  };
+}
+
+function normalizeOwnerListing(listing, origin) {
+  const item = typeof listing.toObject === "function" ? listing.toObject() : listing;
+  const lon = item.location?.coordinates?.[0];
+  const lat = item.location?.coordinates?.[1];
+
+  return {
+    ...item,
+    id: String(item._id || item.id || item.title),
+    name: item.title,
+    price: item.rent,
+    source: "owner",
+    lat,
+    lon,
+    distanceKm: calculateDistanceKm(origin.lat, origin.lng, lat, lon),
+    category: String(item.type || "").toLowerCase()
+  };
+}
+
+function groupAccommodation(results) {
+  return {
+    hotels: results.filter((place) => place.category === "hotel"),
+    hostels: results.filter((place) => place.category === "hostel"),
+    apartments: results.filter((place) => place.category === "apartment" || place.category === "pg")
+  };
+}
+
+async function resolveLocation(location) {
+  if (location.includes(",")) {
+    const [lat, lng] = location.split(",").map(Number);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      const error = new Error("Location coordinates must be valid latitude,longitude");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return { lat, lng };
+  }
+
+  const geo = await axios.get("https://nominatim.openstreetmap.org/search", {
+    params: {
+      q: location,
+      format: "json",
+      limit: 1
+    },
+    headers: {
+      "User-Agent": "city-transition-system-app"
+    },
+    timeout: 10000
+  });
+
+  if (!geo.data || geo.data.length === 0) {
+    const error = new Error("Location not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    lat: Number(geo.data[0].lat),
+    lng: Number(geo.data[0].lon)
+  };
+}
 
 exports.searchAccommodation = async (req, res) => {
-
   try {
-
     const { location } = req.query;
 
     if (!location) {
@@ -13,187 +122,75 @@ exports.searchAccommodation = async (req, res) => {
       });
     }
 
-    let lat;
-    let lng;
+    const origin = await resolveLocation(location);
+    const radiusMeters = 5000;
 
-    // Convert place name → coordinates
-    if (!location.includes(",")) {
-
-      const geo = await axios.get(
-        "https://nominatim.openstreetmap.org/search",
-        {
-          params: {
-            q: location,
-            format: "json",
-            limit: 1
-          },
-          headers: {
-            "User-Agent": "city-transition-system-app"
-          }
-        }
-      );
-
-      if (!geo.data || geo.data.length === 0) {
-        return res.status(404).json({
-          message: "Location not found"
-        });
-      }
-
-      lat = parseFloat(geo.data[0].lat);
-      lng = parseFloat(geo.data[0].lon);
-
-    } else {
-
-      const coords = location.split(",");
-      lat = parseFloat(coords[0]);
-      lng = parseFloat(coords[1]);
-
-    }
-
-
-    // Haversine distance function
-    function getDistance(lat1, lon1, lat2, lon2) {
-
-      const R = 6371;
-
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) *
-        Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-      return R * c;
-    }
-
-
-    // Fetch approved owner listings
     const ownerListings = await Listing.find({
-
       isVerified: true,
-
       location: {
         $near: {
           $geometry: {
             type: "Point",
-            coordinates: [lng, lat]
+            coordinates: [origin.lng, origin.lat]
           },
-          $maxDistance: 4000
+          $maxDistance: radiusMeters
         }
       }
-
     });
 
-
-    // Fetch API listings
     const query = `
-    [out:json];
-    (
-      node["tourism"="hotel"](around:4000,${lat},${lng});
-      node["tourism"="hostel"](around:4000,${lat},${lng});
-      node["tourism"="guest_house"](around:4000,${lat},${lng});
-      node["building"="apartments"](around:4000,${lat},${lng});
-    );
-    out;
+      [out:json][timeout:25];
+      (
+        node["tourism"="hotel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        way["tourism"="hotel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        node["tourism"="hostel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        way["tourism"="hostel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        node["tourism"="guest_house"](around:${radiusMeters},${origin.lat},${origin.lng});
+        way["tourism"="guest_house"](around:${radiusMeters},${origin.lat},${origin.lng});
+        node["building"="apartments"](around:${radiusMeters},${origin.lat},${origin.lng});
+        way["building"="apartments"](around:${radiusMeters},${origin.lat},${origin.lng});
+      );
+      out center tags;
     `;
 
-    const apiResponse = await axios.post(
-      "https://overpass-api.de/api/interpreter",
-      query,
-      {
-        headers: {
-          "Content-Type": "text/plain"
-        }
-      }
-    );
+    const apiResponse = await axios.post(OVERPASS_URL, query, {
+      headers: {
+        "Content-Type": "text/plain",
+        "User-Agent": "city-transition-system-app"
+      },
+      timeout: 15000
+    });
 
-    const places = apiResponse.data.elements || [];
+    const apiListings = (apiResponse.data.elements || [])
+      .map((element) => normalizeApiListing(element, origin))
+      .filter(Boolean);
 
-
-    const apiListings = places
-.filter(place => place.tags && place.tags.name)
-.filter(place => place.lat && place.lon)   // 🔹 prevent undefined coords
-.filter(place => {
-
-const dist = getDistance(lat, lng, place.lat, place.lon);
-
-return dist <= 4;
-
-})
-     .map(place => ({
-title: place.tags.name,
-description: place.tags.tourism || "Accommodation",
-price: Math.floor(Math.random() * 2000) + 500,
-rating: (Math.random() * 2 + 3).toFixed(1),
-location: {
-type: "Point",
-coordinates: [Number(place.lon), Number(place.lat)]
-}
-}));
-
-    // Merge API + owner listings
-    const combined = [...apiListings, ...ownerListings];
-
-
-    // Remove duplicates
+    const verifiedOwnerListings = ownerListings.map((listing) => normalizeOwnerListing(listing, origin));
     const unique = new Map();
 
-combined.forEach(item => {
+    [...verifiedOwnerListings, ...apiListings]
+      .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
+      .forEach((item) => {
+        const key = `${item.source}-${String(item.title || item.name).toLowerCase()}-${item.lat}-${item.lon}`;
 
-const key = item.title.toLowerCase();
+        if (!unique.has(key)) {
+          unique.set(key, item);
+        }
+      });
 
-if(!unique.has(key)){
-unique.set(key,item);
-}
-
-});
-
-const results = Array.from(unique.values());
-
-   
-
-
-    // Categorize
-    const hotels = results.filter(p =>
-      p.title?.toLowerCase().includes("hotel")
-    );
-
-    const hostels = results.filter(p =>
-      p.title?.toLowerCase().includes("hostel") ||
-      p.title?.toLowerCase().includes("guest")
-    );
-
-    const apartments = results.filter(p =>
-      p.title?.toLowerCase().includes("apartment") ||
-      p.title?.toLowerCase().includes("pg")
-    );
-
+    const grouped = groupAccommodation(Array.from(unique.values()));
 
     return res.status(200).json({
-
-      hotels: hotels.slice(0, 6),
-      hostels: hostels.slice(0, 6),
-      apartments: apartments.slice(0, 6),
-
-      searchLocation: {
-        lat,
-        lng
-      }
-
+      hotels: grouped.hotels.slice(0, 12),
+      hostels: grouped.hostels.slice(0, 12),
+      apartments: grouped.apartments.slice(0, 12),
+      searchLocation: origin
     });
-
   } catch (error) {
+    const statusCode = error.statusCode || 500;
 
-    console.error("Accommodation Search Error:", error);
-
-    return res.status(500).json({
-      message: "Server error while searching accommodation"
+    return res.status(statusCode).json({
+      message: statusCode === 500 ? "Server error while searching accommodation" : error.message
     });
-
   }
-
 };

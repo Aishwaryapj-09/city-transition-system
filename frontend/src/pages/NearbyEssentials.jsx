@@ -14,6 +14,8 @@ function NearbyEssentials() {
   const [type, setType] = useState("hospital");
   const [radius, setRadius] = useState("3000");
   const [places, setPlaces] = useState([]);
+  const [allPlaces, setAllPlaces] = useState([]);
+  const [distanceFilter, setDistanceFilter] = useState("");
   const [status, setStatus] = useState("");
 
   const useCurrentLocation = () => {
@@ -54,11 +56,32 @@ function NearbyEssentials() {
       });
 
       setPlaces(response.data.places || []);
+      setAllPlaces(response.data.places || []);
       setStatus(`${response.data.count || 0} places found`);
     } catch (error) {
       setPlaces([]);
+      setAllPlaces([]);
       setStatus(error.response?.data?.message || "Unable to fetch nearby essentials");
     }
+  };
+
+  const applyDistanceFilter = () => {
+    if (!distanceFilter) {
+      setPlaces(allPlaces);
+      return;
+    }
+
+    setPlaces(allPlaces.filter((place) => {
+      const distance = Number(place.distanceKm);
+
+      if (!Number.isFinite(distance)) {
+        return false;
+      }
+
+      return distanceFilter === "10+"
+        ? distance > 10
+        : distance <= Number(distanceFilter);
+    }));
   };
 
   return (
@@ -92,8 +115,21 @@ function NearbyEssentials() {
           <option value="10000">10 km</option>
         </select>
 
+        <select value={distanceFilter} onChange={(event) => setDistanceFilter(event.target.value)}>
+          <option value="">Distance Filter</option>
+          <option value="1">Within 1 km</option>
+          <option value="3">Within 3 km</option>
+          <option value="5">Within 5 km</option>
+          <option value="10">Within 10 km</option>
+          <option value="10+">Greater than 10 km</option>
+        </select>
+
         <button className="search-btn" onClick={searchEssentials}>
           Search
+        </button>
+
+        <button className="search-btn secondary-btn" onClick={applyDistanceFilter}>
+          Apply Filter
         </button>
       </div>
 
@@ -108,6 +144,9 @@ function NearbyEssentials() {
               <p>{place.address || "Address details not listed in OpenStreetMap"}</p>
               <p>
                 Location: {Number(place.lat).toFixed(4)}, {Number(place.lng).toFixed(4)}
+              </p>
+              <p>
+                Distance: {Number.isFinite(Number(place.distanceKm)) ? `${Number(place.distanceKm).toFixed(2)} km` : "Not available"}
               </p>
               <a
                 className="view-btn map-link"

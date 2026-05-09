@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { calculateDistanceKm } = require("./distance.service");
 
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
@@ -93,7 +94,7 @@ function getElementCoordinates(element) {
   };
 }
 
-function toNearbyPlace(element, type) {
+function toNearbyPlace(element, type, origin) {
   const coordinates = getElementCoordinates(element);
 
   if (!Number.isFinite(Number(coordinates.lat)) || !Number.isFinite(Number(coordinates.lng))) {
@@ -107,6 +108,7 @@ function toNearbyPlace(element, type) {
     category: ESSENTIAL_TYPES[type].label,
     lat: Number(coordinates.lat),
     lng: Number(coordinates.lng),
+    distanceKm: calculateDistanceKm(origin.lat, origin.lng, coordinates.lat, coordinates.lng),
     address: element.tags?.["addr:full"] || element.tags?.["addr:street"] || "",
     source: "openstreetmap"
   };
@@ -125,8 +127,9 @@ async function findNearbyEssentials(input) {
   });
 
   const places = (response.data.elements || [])
-    .map((element) => toNearbyPlace(element, options.type))
+    .map((element) => toNearbyPlace(element, options.type, options))
     .filter(Boolean)
+    .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 20);
 
   return {

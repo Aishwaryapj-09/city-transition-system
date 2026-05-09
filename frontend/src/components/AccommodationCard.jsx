@@ -1,100 +1,71 @@
 import React, { useState } from "react";
 
-const AccommodationCard = ({ place, userLat, userLon }) => {
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const values = [lat1, lon1, lat2, lon2].map(Number);
 
+  if (!values.every(Number.isFinite)) {
+    return null;
+  }
+
+  const [fromLat, fromLon, toLat, toLon] = values;
+  const R = 6371;
+  const dLat = (toLat - fromLat) * Math.PI / 180;
+  const dLon = (toLon - fromLon) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(fromLat * Math.PI / 180) *
+    Math.cos(toLat * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+
+  return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
+}
+
+const AccommodationCard = ({ place, userLat, userLon }) => {
   const [showDetails, setShowDetails] = useState(false);
 
-  // ✅ TITLE
   const title = place.name || place.title || "No Name";
+  const lat = Number(place.lat ?? place.location?.coordinates?.[1]);
+  const lon = Number(place.lon ?? place.location?.coordinates?.[0]);
+  const distance =
+    Number.isFinite(Number(place.distanceKm))
+      ? Number(place.distanceKm)
+      : calculateDistance(userLat, userLon, lat, lon);
 
-  // ✅ LAT / LON
-  const lat =
-    place.lat ||
-    place.location?.coordinates?.[1];
-
-  const lon =
-    place.lon ||
-    place.location?.coordinates?.[0];
-
-  // ✅ LOCATION DISPLAY
   const displayLocation =
     place.location && typeof place.location === "string" && place.location.trim() !== ""
       ? place.location
-      : lat && lon
+      : Number.isFinite(lat) && Number.isFinite(lon)
         ? `${lat.toFixed(4)}, ${lon.toFixed(4)}`
         : "Location not available";
 
-  // ✅ FINAL PRICE LOGIC (NO ZERO EVER)
-  let price;
+  const priceText =
+    place.source === "owner" && Number.isFinite(Number(place.price))
+      ? `Rs ${Number(place.price)} /month`
+      : "Live OSM place";
 
-  if (place.source === "owner") {
-    // 🔥 OWNER: use actual rent
-    price = place.price;
+  const ratingText = Number.isFinite(Number(place.rating))
+    ? Number(place.rating).toFixed(1)
+    : "OpenStreetMap";
 
-    // fallback if backend gave 0 or undefined
-    if (!price || price === 0) {
-      price = Math.floor(Math.random() * 5000) + 500;
-    }
-
-  } else {
-    // 🔥 API: always random ₹50
-    // 0–₹5000
-    price = Math.floor(Math.random() * 4500) + 500;
-  }
-
-  // ✅ RATING
-  const rating = Number(place.rating || 4).toFixed(1);
-
-  // ✅ IMAGE
-  const image = `https://source.unsplash.com/400x250/?hotel,${title}`;
-
-  // ✅ DISTANCE FUNCTION
-  function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1 * Math.PI / 180) *
-      Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) ** 2;
-
-    return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2);
-  }
-
-  let distance = "N/A";
-
-  if (userLat && userLon && lat && lon) {
-    distance = calculateDistance(userLat, userLon, lat, lon);
-  }
+  const mapUrl = Number.isFinite(lat) && Number.isFinite(lon)
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`
+    : null;
 
   return (
     <div className="acc-card">
-
-      <img src={image} alt="stay" />
-
       <div className="card-body">
-
         <h3>{title}</h3>
 
-        {/* ✅ VERIFIED */}
         {place.source === "owner" && (
-          <p style={{ color: "lightgreen" }}>✔ Verified Listing</p>
+          <p className="verified-text">Verified Listing</p>
         )}
 
-        <p>⭐ Rating: {rating}</p>
-
-        <p>📍 {displayLocation}</p>
-
-        <p>
-          📏 Distance: {distance !== "N/A" ? `${distance} km` : "N/A km"}
-        </p>
-
-        <p>
-          💰 ₹{price} {place.source === "owner" ? "/month" : "/night"}
-        </p>
+        <p>Source: {place.source === "owner" ? "Verified owner" : "OpenStreetMap live data"}</p>
+        <p>Rating: {ratingText}</p>
+        <p>Location: {displayLocation}</p>
+        <p>Distance: {distance !== null ? `${distance.toFixed(2)} km` : "Not available"}</p>
+        <p>{priceText}</p>
 
         <button
           className="view-btn"
@@ -105,12 +76,14 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
 
         {showDetails && (
           <div className="details-box">
-            <p>
-              <b>Description:</b> Comfortable stay near city center with easy access to transport and food spots.
-            </p>
+            <p>{place.description || place.category || "Accommodation result from live city map data."}</p>
+            {mapUrl && (
+              <a className="text-link" href={mapUrl} target="_blank" rel="noreferrer">
+                Open in map
+              </a>
+            )}
           </div>
         )}
-
       </div>
     </div>
   );
