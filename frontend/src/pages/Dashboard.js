@@ -34,8 +34,12 @@ function Dashboard() {
                 Find Accommodation
               </button>
 
+              <button onClick={() => navigate("/nearby-essentials")}>
+                Nearby Essentials
+              </button>
+
               <p style={{ marginTop: "10px" }}>
-                Search hotels, hostels, PG and apartments near your location.
+                Search hotels, hostels, PG, apartments and nearby essentials.
               </p>
             </>
 

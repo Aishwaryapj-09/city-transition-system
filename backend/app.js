@@ -7,6 +7,8 @@ const rateLimit = require("express-rate-limit");
 
 const authRoutes = require("./routes/auth.routes");
 const listingRoutes = require("./routes/listing.routes");
+const accommodationRoutes = require("./routes/accommodation.routes");
+const nearbyRoutes = require("./routes/nearby.routes");
 
 const errorMiddleware = require("./middleware/errorMiddleware");
 
@@ -47,10 +49,13 @@ app.use("/api/auth", authRoutes);
 // All accommodation + listing features
 
 // KEEP accommodation
-app.use("/api/accommodation", listingRoutes);
+app.use("/api/accommodation", accommodationRoutes);
 
 // ADD this line 👇
 app.use("/api/listings", listingRoutes);
+
+// Nearby essentials finder
+app.use("/api/nearby", nearbyRoutes);
 
 // ---------------- HEALTH CHECK ----------------
 

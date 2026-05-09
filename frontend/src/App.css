@@ -164,6 +164,39 @@ padding:8px;
 border-radius:6px;
 border:none;
 }
+
+.essentials-search select{
+  padding:10px;
+  border-radius:6px;
+  border:none;
+  font-size:14px;
+}
+
+.status-text{
+  margin:12px 0 20px;
+  color:#c9d8e0;
+}
+
+.essentials-card{
+  min-height:220px;
+}
+
+.type-pill{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:6px;
+  background:#123d62;
+  color:#b9e4ff;
+  font-size:12px;
+  margin-bottom:10px;
+}
+
+.map-link{
+  display:block;
+  text-align:center;
+  text-decoration:none;
+  margin-top:14px;
+}
 @media (max-width:600px){
 
   .acc-card{

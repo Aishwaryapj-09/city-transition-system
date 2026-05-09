@@ -7,5 +7,6 @@ searchAccommodation
 } = require("../controllers/accommodation.controller");
 
 router.get("/",searchAccommodation);
+router.get("/search",searchAccommodation);
 
 module.exports = router;

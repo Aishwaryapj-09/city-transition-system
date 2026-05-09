@@ -1,8 +1,6 @@
 pipeline {
     agent any
 
-   
-
     environment {
         BACKEND_IMAGE = "aishwaryapj09/city-transition-backend"
         FRONTEND_IMAGE = "aishwaryapj09/city-transition-frontend"
@@ -12,20 +10,18 @@ pipeline {
     }
 
     stages {
-
-        // ✅ 1. CHECKOUT
         stage('Clean Workspace') {
-        steps {
-            deleteDir()
+            steps {
+                deleteDir()
+            }
         }
-    }
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        // ✅ 2. INSTALL DEPENDENCIES
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
@@ -37,25 +33,43 @@ pipeline {
             }
         }
 
-        // ✅ 3. LINT
-        stage('Lint') {
+        stage('Static Code Analysis - ESLint') {
             steps {
                 dir('backend') {
-                    bat 'npm run lint || exit 0'
+                    bat 'npm run lint'
+                }
+                dir('frontend') {
+                    bat 'npm run lint'
                 }
             }
         }
 
-        // ✅ 4. UNIT TEST + COVERAGE
-        stage('Unit Tests + Coverage') {
+        stage('Nearby Feature Unit Test') {
+            steps {
+                dir('backend') {
+                    bat 'npm run test:nearby:unit'
+                }
+            }
+        }
+
+        stage('Nearby Feature Integration Test') {
+            steps {
+                dir('backend') {
+                    bat 'npm run test:nearby:integration'
+                }
+            }
+        }
+
+        stage('Unit Tests + Code Coverage') {
             steps {
                 dir('backend') {
                     bat 'npm run coverage'
+                    bat 'if exist coverage\\lcov.info echo Coverage report generated'
                 }
+                archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
             }
         }
 
-        // ✅ 5. INTEGRATION TESTS
         stage('Integration Tests') {
             steps {
                 dir('backend') {
@@ -64,49 +78,42 @@ pipeline {
             }
         }
 
-        // ✅ 6. SONARQUBE ANALYSIS
-      stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('sonarqube-server') {
-            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                dir('backend') {
-                    bat """
-                    npx sonar-scanner ^
-                    -Dsonar.projectKey=city-transition ^
-                    -Dsonar.sources=. ^
-                    -Dsonar.login=%SONAR_TOKEN% ^
-                    -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-                    """
+        stage('SonarQube Static Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-server') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        dir('backend') {
+                            bat """
+                            npx sonar-scanner ^
+                            -Dsonar.login=%SONAR_TOKEN%
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
-}
-        // ✅ 7. SECURITY SCAN
-        stage('Security Scan') {
-    steps {
-        dir('backend') {
-            bat 'npm audit --audit-level=high || exit 0'
-        }
-    }
-}
 
-        // ✅ 8. BUILD BACKEND
-        stage('Build Backend') {
+        stage('Dependency Security Scan') {
+            steps {
+                dir('backend') {
+                    bat 'npm audit --audit-level=high || exit 0'
+                }
+            }
+        }
+
+        stage('Build Backend Docker Image') {
             steps {
                 bat "docker build --no-cache -t %BACKEND_IMAGE%:%TAG% ./backend"
             }
         }
 
-        // ✅ 9. BUILD FRONTEND
-        stage('Build Frontend') {
+        stage('Build Frontend Docker Image') {
             steps {
                 bat "docker build --no-cache -t %FRONTEND_IMAGE%:%TAG% ./frontend"
             }
         }
 
-        // ✅ 10. PUSH IMAGES
-        stage('Push Images') {
+        stage('Push Container Images') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-pass',
@@ -114,18 +121,15 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     bat """
-                        docker login -u %DOCKER_USER% -p %DOCKER_PASS%
-
-                        docker push %BACKEND_IMAGE%:%TAG%
-                        docker push %FRONTEND_IMAGE%:%TAG%
-
-                        docker logout
+                    docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                    docker push %BACKEND_IMAGE%:%TAG%
+                    docker push %FRONTEND_IMAGE%:%TAG%
+                    docker logout
                     """
                 }
             }
         }
 
-        // ✅ 11. DEPLOY TO KUBERNETES
         stage('Deploy to Kubernetes') {
             steps {
                 bat 'kubectl config use-context docker-desktop'
@@ -135,7 +139,6 @@ pipeline {
             }
         }
 
-        // ✅ 12. VERIFY DEPLOYMENT
         stage('Verify Deployment') {
             steps {
                 bat 'kubectl get pods'
@@ -145,22 +148,22 @@ pipeline {
 
         stage('Info') {
             steps {
-                echo "----------------------------------"
                 echo "FULL DEVSECOPS PIPELINE ENABLED"
-                echo "----------------------------------"
+                echo "Nearby Essentials Finder is covered by unit, integration, coverage, lint, SonarQube, Docker, and Kubernetes stages"
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline completed successfully'
+            echo 'Pipeline completed successfully'
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo 'Pipeline failed'
         }
         always {
-            echo '🏁 Pipeline finished'
+            archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
+            echo 'Pipeline finished'
         }
     }
 }

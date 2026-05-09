@@ -5,9 +5,13 @@
   "main": "index.js",
 
   "scripts": {
+    "start": "node server.js",
     "test": "jest",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
+    "test:nearby:unit": "jest tests/unit/nearby.service.test.js",
+    "test:nearby:integration": "jest tests/integration/nearby.test.js",
+    "coverage:nearby": "jest tests/unit/nearby.service.test.js tests/integration/nearby.test.js --coverage",
     "coverage": "jest --coverage",
     "lint": "eslint ."
   },

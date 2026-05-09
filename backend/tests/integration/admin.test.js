@@ -61,7 +61,7 @@ describe("Admin Approval Flow", () => {
 
   it("owner creates listing", async () => {
     const res = await request(app)
-      .post("/api/accommodation")
+      .post("/api/listings")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({
         title: "Test PG",
@@ -81,7 +81,7 @@ describe("Admin Approval Flow", () => {
 
   it("admin should fetch pending listings", async () => {
     const res = await request(app)
-      .get("/api/accommodation/pending")
+      .get("/api/listings/pending")
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.statusCode).toBe(200);
@@ -89,7 +89,7 @@ describe("Admin Approval Flow", () => {
 
   it("admin verifies listing", async () => {
     const res = await request(app)
-      .patch(`/api/accommodation/verify/${listingId}`)
+      .patch(`/api/listings/verify/${listingId}`)
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect([200, 400]).toContain(res.statusCode);
@@ -98,7 +98,7 @@ describe("Admin Approval Flow", () => {
   // ✅ NEGATIVE CASE
   it("owner should NOT verify listing", async () => {
     const res = await request(app)
-      .patch(`/api/accommodation/verify/${listingId}`)
+      .patch(`/api/listings/verify/${listingId}`)
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(res.statusCode).toBe(403);

@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Accommodation from "./pages/Accommodation";
+import NearbyEssentials from "./pages/NearbyEssentials";
 import Listings from "./pages/Listings";
 import AddListing from "./pages/AddListing";
 import MyListings from "./pages/MyListings";
@@ -91,6 +92,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Accommodation />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/nearby-essentials"
+          element={
+            <ProtectedRoute>
+              <NearbyEssentials />
             </ProtectedRoute>
           }
         />
