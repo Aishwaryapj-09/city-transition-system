@@ -16,6 +16,16 @@ function Accommodation() {
   const [userLat, setUserLat] = useState(null);
   const [userLon, setUserLon] = useState(null);
   const [status, setStatus] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
+  const formatCoordinates = (location) => {
+    const lat = Number(location?.lat);
+    const lng = Number(location?.lng);
+
+    return Number.isFinite(lat) && Number.isFinite(lng)
+      ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+      : "";
+  };
 
   const updateResults = (data) => {
     setHotels(data.hotels || []);
@@ -26,6 +36,7 @@ function Accommodation() {
     setAllApartments(data.apartments || []);
     setUserLat(data.searchLocation?.lat);
     setUserLon(data.searchLocation?.lng);
+    setSelectedLocation(data.searchLocation || null);
   };
 
   const searchPlaces = async () => {
@@ -79,10 +90,12 @@ function Accommodation() {
   const useAreaSearch = (event) => {
     setArea(event.target.value);
     setCoordinates("");
+    setSelectedLocation(null);
   };
 
   const clearLocation = () => {
     setCoordinates("");
+    setSelectedLocation(null);
     setStatus("");
   };
 
@@ -158,6 +171,13 @@ function Accommodation() {
           Find Accommodation
         </button>
       </div>
+
+      {selectedLocation && (
+        <div className="selected-location">
+          <p><strong>Selected place:</strong> {selectedLocation.displayName || area || "Current location"}</p>
+          <p><strong>Coordinates:</strong> {formatCoordinates(selectedLocation)}</p>
+        </div>
+      )}
 
       <div className="filter-panel">
         <div className="field-block">

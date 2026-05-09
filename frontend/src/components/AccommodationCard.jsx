@@ -55,30 +55,48 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
     : null;
 
   return (
-    <div className="acc-card">
+    <div className="acc-card result-card">
       <div className="card-body">
+        <div className="card-topline">
+          <span className="result-pill">{place.category || "Stay"}</span>
+          <span className="mini-chip">{ratingText} / 5</span>
+        </div>
+
         <h3>{title}</h3>
 
-        <p>Rating: {ratingText} / 5</p>
-        <p>Location: {displayLocation}</p>
-        <p>Distance: {distance !== null ? `${distance.toFixed(2)} km` : "Not available"}</p>
-        <p>{priceText}</p>
+        <p className="card-muted">{displayLocation}</p>
 
-        <button
-          className="view-btn"
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          {showDetails ? "Hide Details" : "View Details"}
-        </button>
+        <div className="metric-row">
+          <div>
+            <span>Distance</span>
+            <strong>{distance !== null ? `${distance.toFixed(2)} km` : "NA"}</strong>
+          </div>
+          <div>
+            <span>Price</span>
+            <strong>{priceText}</strong>
+          </div>
+        </div>
+
+        <div className="card-actions">
+          <button
+            className="view-btn"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? "Hide Details" : "Show Details"}
+          </button>
+
+          {mapUrl && (
+            <a className="map-link compact-map-link" href={mapUrl} target="_blank" rel="noreferrer">
+              Open Map
+            </a>
+          )}
+        </div>
 
         {showDetails && (
           <div className="details-box">
             <p>{place.description || place.category || "Accommodation details"}</p>
-            {mapUrl && (
-              <a className="text-link" href={mapUrl} target="_blank" rel="noreferrer">
-                Open in map
-              </a>
-            )}
+            <p><strong>Coordinates:</strong> {Number.isFinite(lat) && Number.isFinite(lon) ? `${lat.toFixed(5)}, ${lon.toFixed(5)}` : "Not available"}</p>
+            <p><strong>Rating:</strong> {ratingText} / 5</p>
           </div>
         )}
       </div>

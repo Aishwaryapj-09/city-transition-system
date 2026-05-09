@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import API from "../services/api";
+import NearbyEssentialCard from "../components/NearbyEssentialCard";
 
 const ESSENTIAL_TYPES = [
   { value: "hospital", label: "Hospital" },
@@ -17,6 +18,16 @@ function NearbyEssentials() {
   const [sortBy, setSortBy] = useState("distance");
   const [places, setPlaces] = useState([]);
   const [status, setStatus] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
+  const formatCoordinates = (location) => {
+    const lat = Number(location?.lat);
+    const lng = Number(location?.lng);
+
+    return Number.isFinite(lat) && Number.isFinite(lng)
+      ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+      : "";
+  };
 
   const useCurrentLocation = () => {
     setStatus("Getting your location...");
@@ -39,10 +50,12 @@ function NearbyEssentials() {
   const useAreaSearch = (event) => {
     setArea(event.target.value);
     setCoordinates("");
+    setSelectedLocation(null);
   };
 
   const clearLocation = () => {
     setCoordinates("");
+    setSelectedLocation(null);
     setStatus("");
   };
 
@@ -80,9 +93,11 @@ function NearbyEssentials() {
       const results = response.data.places || [];
 
       setPlaces(sortResults(results));
+      setSelectedLocation(response.data.search || null);
       setStatus(`${response.data.count || 0} places found`);
     } catch (error) {
       setPlaces([]);
+      setSelectedLocation(null);
       setStatus(error.response?.data?.message || error.message || "Unable to fetch nearby essentials");
     }
   };
@@ -126,6 +141,13 @@ function NearbyEssentials() {
         </button>
       </div>
 
+      {selectedLocation && (
+        <div className="selected-location">
+          <p><strong>Selected place:</strong> {selectedLocation.displayName || area || "Current location"}</p>
+          <p><strong>Coordinates:</strong> {formatCoordinates(selectedLocation)}</p>
+        </div>
+      )}
+
       <div className="filter-panel">
         <div className="field-block">
           <label htmlFor="essential-type">Essential</label>
@@ -165,26 +187,7 @@ function NearbyEssentials() {
 
       <div className="acc-grid">
         {places.map((place) => (
-          <div className="acc-card essentials-card" key={place.id}>
-            <div className="card-body">
-              <h3>{place.name}</h3>
-              {place.address && <p>{place.address}</p>}
-              <p>
-                Location: {Number(place.lat).toFixed(4)}, {Number(place.lng).toFixed(4)}
-              </p>
-              <p>
-                Distance: {Number.isFinite(Number(place.distanceKm)) ? `${Number(place.distanceKm).toFixed(2)} km` : "Not available"}
-              </p>
-              <a
-                className="view-btn map-link"
-                href={`https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=17/${place.lat}/${place.lng}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open Map
-              </a>
-            </div>
-          </div>
+          <NearbyEssentialCard place={place} key={place.id} />
         ))}
       </div>
     </div>

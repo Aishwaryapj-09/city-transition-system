@@ -110,25 +110,60 @@
 /* Grid layout for cards (3 cards per row) */
 
 .acc-grid{
-  display:flex;
-  flex-wrap:wrap;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
   gap:20px;
+  align-items:stretch;
 }
 
 
 /* Card */
 
 .acc-card{
-  width:31%;
+  width:100%;
   background:#1e2d36;
-  border-radius:10px;
+  border-radius:8px;
   overflow:hidden;
   box-shadow:0 4px 10px rgba(0,0,0,0.3);
-  transition:transform 0.2s ease;
+  transition:transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .acc-card:hover{
-  transform:translateY(-4px);
+  transform:translateY(-6px);
+  box-shadow:0 16px 34px rgba(0,0,0,0.34);
+}
+
+.result-card{
+  position:relative;
+  min-height:260px;
+  border:1px solid rgba(141,216,255,0.12);
+  background:linear-gradient(180deg,#213640 0%,#182a33 100%);
+}
+
+.result-card::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:4px;
+  background:linear-gradient(90deg,#16b6d7,#0d6efd,#20c997);
+  opacity:0.85;
+}
+
+.result-card::after{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-70%;
+  width:45%;
+  height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);
+  transform:skewX(-18deg);
+  transition:left 0.45s ease;
+  pointer-events:none;
+}
+
+.result-card:hover::after{
+  left:120%;
 }
 
 
@@ -144,15 +179,85 @@
 /* Card content */
 
 .card-body{
-  padding:15px;
+  position:relative;
+  z-index:1;
+  padding:18px;
 }
 
 
 /* Title */
 
 .card-body h3{
-  margin-bottom:8px;
-  font-size:18px;
+  margin:10px 0 8px;
+  font-size:19px;
+  line-height:1.25;
+}
+
+.card-topline{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+
+.result-pill,
+.mini-chip{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.result-pill{
+  color:#c9f7ff;
+  background:#123f4d;
+  border:1px solid rgba(141,216,255,0.22);
+  text-transform:capitalize;
+}
+
+.mini-chip{
+  color:#101820;
+  background:#b8f3d6;
+}
+
+.card-muted{
+  color:#c5d6dd;
+  font-size:14px;
+  line-height:1.45;
+  min-height:42px;
+}
+
+.metric-row{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin:16px 0;
+}
+
+.metric-row div{
+  padding:10px;
+  background:#132832;
+  border:1px solid rgba(141,216,255,0.12);
+  border-radius:8px;
+}
+
+.metric-row span{
+  display:block;
+  color:#91aebb;
+  font-size:11px;
+  margin-bottom:5px;
+}
+
+.metric-row strong{
+  display:block;
+  color:#f4fbff;
+  font-size:13px;
+  line-height:1.25;
+  overflow-wrap:anywhere;
 }
 
 
@@ -177,8 +282,7 @@
 /* Button */
 
 .view-btn{
-  width:100%;
-  padding:8px;
+  padding:9px 12px;
   border:none;
   background:#0d6efd;
   color:white;
@@ -190,13 +294,63 @@
   background:#0b5ed7;
 }
 
+.card-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  align-items:center;
+}
+
+.compact-map-link{
+  width:auto;
+  margin:0;
+  padding:9px 12px;
+  border-radius:6px;
+  background:#284653;
+  color:white;
+  text-align:center;
+  text-decoration:none;
+  box-sizing:border-box;
+}
+
+.compact-map-link:hover{
+  background:#345b6b;
+}
+
+.details-box{
+  margin-top:14px;
+  padding:12px;
+  background:#10242d;
+  border:1px solid rgba(141,216,255,0.14);
+  border-radius:8px;
+  color:#d9e9ef;
+  animation:details-in 0.22s ease;
+}
+
+.details-box p{
+  margin:6px 0;
+  font-size:13px;
+  line-height:1.45;
+}
+
+@keyframes details-in{
+  from{
+    opacity:0;
+    transform:translateY(-4px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
 
 /* Responsive layout */
 
 @media (max-width:900px){
 
   .acc-card{
-    width:48%;
+    width:100%;
   }
 
 }
@@ -275,8 +429,24 @@
   font-size:13px;
 }
 
+.selected-location{
+  max-width:520px;
+  margin:-16px 0 22px;
+  padding:12px 14px;
+  background:#10262f;
+  border-left:4px solid #1da1f2;
+  border-radius:6px;
+  color:#d8edf5;
+}
+
+.selected-location p{
+  margin:4px 0;
+  font-size:14px;
+  line-height:1.4;
+}
+
 .essentials-card{
-  min-height:220px;
+  min-height:280px;
 }
 
 .type-pill{
