@@ -111,8 +111,8 @@
 
 .acc-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:20px;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:22px;
   align-items:stretch;
 }
 
@@ -135,9 +135,10 @@
 
 .result-card{
   position:relative;
-  min-height:260px;
+  min-height:285px;
   border:1px solid rgba(141,216,255,0.12);
   background:linear-gradient(180deg,#213640 0%,#182a33 100%);
+  backdrop-filter:blur(4px);
 }
 
 .result-card::before{
@@ -181,7 +182,10 @@
 .card-body{
   position:relative;
   z-index:1;
+  min-height:249px;
   padding:18px;
+  display:flex;
+  flex-direction:column;
 }
 
 
@@ -299,6 +303,7 @@
   grid-template-columns:1fr 1fr;
   gap:10px;
   align-items:center;
+  margin-top:auto;
 }
 
 .compact-map-link{
@@ -325,6 +330,10 @@
   border-radius:8px;
   color:#d9e9ef;
   animation:details-in 0.22s ease;
+}
+
+.details-lead{
+  color:#f1fbff;
 }
 
 .details-box p{

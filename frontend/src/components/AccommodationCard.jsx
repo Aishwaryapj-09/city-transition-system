@@ -54,6 +54,8 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
     ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`
     : null;
 
+  const aboutText = `${title} is a ${String(place.category || "stay").toLowerCase()} option near the selected location. It is about ${distance !== null ? `${distance.toFixed(2)} km` : "a short distance"} away, has an estimated rating of ${ratingText} out of 5, and is listed around ${priceText.toLowerCase()}.`;
+
   return (
     <div className="acc-card result-card">
       <div className="card-body">
@@ -94,7 +96,8 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
 
         {showDetails && (
           <div className="details-box">
-            <p>{place.description || place.category || "Accommodation details"}</p>
+            <p className="details-lead">{aboutText}</p>
+            <p><strong>Type:</strong> {place.description || place.category || "Accommodation"}</p>
             <p><strong>Coordinates:</strong> {Number.isFinite(lat) && Number.isFinite(lon) ? `${lat.toFixed(5)}, ${lon.toFixed(5)}` : "Not available"}</p>
             <p><strong>Rating:</strong> {ratingText} / 5</p>
           </div>

@@ -9,6 +9,7 @@ const NearbyEssentialCard = ({ place }) => {
   const mapUrl = Number.isFinite(lat) && Number.isFinite(lng)
     ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`
     : null;
+  const aboutText = `${place.name} is a nearby ${String(place.category || "essential service").toLowerCase()} around the selected area. It is ${Number.isFinite(distance) ? `${distance.toFixed(2)} km` : "within the chosen search radius"} from the chosen place and can be opened directly on the map for route planning.`;
 
   return (
     <div className="acc-card result-card essentials-card">
@@ -49,6 +50,7 @@ const NearbyEssentialCard = ({ place }) => {
 
         {showDetails && (
           <div className="details-box">
+            <p className="details-lead">{aboutText}</p>
             <p><strong>Category:</strong> {place.category || "Essential service"}</p>
             <p><strong>Coordinates:</strong> {Number.isFinite(lat) && Number.isFinite(lng) ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : "Not available"}</p>
             <p><strong>Distance:</strong> {Number.isFinite(distance) ? `${distance.toFixed(2)} km from selected place` : "Not available"}</p>
