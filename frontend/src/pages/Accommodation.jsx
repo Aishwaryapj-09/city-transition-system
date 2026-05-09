@@ -5,7 +5,6 @@ import API from "../services/api";
 function Accommodation() {
   const [area, setArea] = useState("Yeshwanthpur, Bengaluru");
   const [coordinates, setCoordinates] = useState("");
-  const [searchMode, setSearchMode] = useState("place");
   const [hotels, setHotels] = useState([]);
   const [hostels, setHostels] = useState([]);
   const [apartments, setApartments] = useState([]);
@@ -14,11 +13,9 @@ function Accommodation() {
   const [allApartments, setAllApartments] = useState([]);
   const [priceFilter, setPriceFilter] = useState("");
   const [distanceFilter, setDistanceFilter] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("");
   const [userLat, setUserLat] = useState(null);
   const [userLon, setUserLon] = useState(null);
   const [status, setStatus] = useState("");
-  const [resolvedPlace, setResolvedPlace] = useState("");
 
   const updateResults = (data) => {
     setHotels(data.hotels || []);
@@ -29,14 +26,13 @@ function Accommodation() {
     setAllApartments(data.apartments || []);
     setUserLat(data.searchLocation?.lat);
     setUserLon(data.searchLocation?.lng);
-    setResolvedPlace(data.searchLocation?.displayName || "");
   };
 
   const searchPlaces = async () => {
-    const location = searchMode === "current" ? coordinates : area.trim();
+    const location = coordinates || area.trim();
 
     if (!location) {
-      setStatus(searchMode === "current" ? "Click Use My Location first" : "Enter a place name");
+      setStatus("Enter a place name or use your current location");
       return;
     }
 
@@ -55,7 +51,7 @@ function Accommodation() {
         (response.data.hostels || []).length +
         (response.data.apartments || []).length;
 
-      setStatus(`${count} live/verified results found`);
+      setStatus(`${count} accommodation results found`);
     } catch (error) {
       updateResults({});
       setStatus(error.response?.data?.message || "Unable to fetch accommodation");
@@ -71,7 +67,7 @@ function Accommodation() {
         const lon = pos.coords.longitude.toFixed(6);
 
         setCoordinates(`${lat},${lon}`);
-        setSearchMode("current");
+        setArea("");
         setStatus("Current location selected");
       },
       () => {
@@ -82,7 +78,7 @@ function Accommodation() {
 
   const useAreaSearch = (event) => {
     setArea(event.target.value);
-    setSearchMode("place");
+    setCoordinates("");
   };
 
   const applyFilters = (places) => {
@@ -90,11 +86,7 @@ function Accommodation() {
       const price = Number(place.price || 0);
       const distance = Number(place.distanceKm);
 
-      if (sourceFilter && place.source !== sourceFilter) {
-        return false;
-      }
-
-      if (priceFilter && place.source === "owner") {
+      if (priceFilter) {
         if (priceFilter.includes("-")) {
           const [min, max] = priceFilter.split("-").map(Number);
           if (price < min || price > max) return false;
@@ -126,39 +118,21 @@ function Accommodation() {
   return (
     <div className="acc-container">
       <h1>Accommodation Finder</h1>
-      <p>Discover verified owner listings and live OpenStreetMap places in a city.</p>
+      <p>Find stays around a place or your current location.</p>
 
       <div className="search-area">
-        <div className="mode-toggle" aria-label="Search mode">
-          <button
-            type="button"
-            className={searchMode === "place" ? "active" : ""}
-            onClick={() => setSearchMode("place")}
-          >
-            Place Name
-          </button>
-          <button
-            type="button"
-            className={searchMode === "current" ? "active" : ""}
-            onClick={() => setSearchMode("current")}
-          >
-            My Location
-          </button>
-        </div>
-
         <input
           aria-label="Area name"
-          placeholder="Enter area name, e.g. Yeshwanthpur, Bengaluru"
+          placeholder="Enter place name"
           value={area}
           onChange={useAreaSearch}
-          disabled={searchMode === "current"}
         />
 
-        <button className="loc-btn" onClick={useLocation} disabled={searchMode !== "current"}>
+        <button className="loc-btn" onClick={useLocation}>
           Use My Location
         </button>
 
-        {searchMode === "current" && coordinates && (
+        {coordinates && (
           <p className="status-text">Using current location: {coordinates}</p>
         )}
 
@@ -168,14 +142,8 @@ function Accommodation() {
       </div>
 
       <div className="filter-bar">
-        <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-          <option value="">All Sources</option>
-          <option value="owner">Verified Owner</option>
-          <option value="openstreetmap">Live OSM</option>
-        </select>
-
         <select value={priceFilter} onChange={(event) => setPriceFilter(event.target.value)}>
-          <option value="">Owner Price</option>
+          <option value="">Price</option>
           <option value="2000-6000">Rs 2000 - Rs 6000</option>
           <option value="6000-12000">Rs 6000 - Rs 12000</option>
           <option value="12000-18000">Rs 12000 - Rs 18000</option>
@@ -200,7 +168,6 @@ function Accommodation() {
       </div>
 
       {status && <p className="status-text">{status}</p>}
-      {resolvedPlace && <p className="status-text">Resolved place: {resolvedPlace}</p>}
 
       <h2 className="section-title">Hotels Nearby</h2>
       <div className="acc-grid">

@@ -22,6 +22,40 @@ function getAccommodationCategory(tags = {}) {
   return "apartment";
 }
 
+function hashText(value) {
+  return String(value || "").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+}
+
+function createDisplayRating(seed) {
+  return Number((3.6 + (hashText(seed) % 14) / 10).toFixed(1));
+}
+
+function createEstimatedPrice(category, seed) {
+  const basePrice = {
+    hotel: 1800,
+    hostel: 650,
+    apartment: 9000,
+    pg: 5500
+  }[category] || 1200;
+
+  return basePrice + (hashText(seed) % 9) * 350;
+}
+
+function formatAddress(tags = {}, fallback = "") {
+  const parts = [
+    tags["addr:housenumber"],
+    tags["addr:street"],
+    tags["addr:suburb"] || tags["addr:neighbourhood"],
+    tags["addr:city"]
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+
+  return fallback.split(",").slice(0, 3).join(", ");
+}
+
 function normalizeApiListing(element, origin) {
   const coordinates = getElementCoordinates(element);
 
@@ -38,6 +72,9 @@ function normalizeApiListing(element, origin) {
     description: element.tags.tourism || element.tags.building || "Accommodation",
     category,
     source: "openstreetmap",
+    price: createEstimatedPrice(category, `${element.type}-${element.id}-${element.tags.name}`),
+    rating: createDisplayRating(`${element.type}-${element.id}-${element.tags.name}`),
+    address: formatAddress(element.tags, origin.displayName),
     lat: Number(coordinates.lat),
     lon: Number(coordinates.lng),
     distanceKm: calculateDistanceKm(origin.lat, origin.lng, coordinates.lat, coordinates.lng),
@@ -58,6 +95,8 @@ function normalizeOwnerListing(listing, origin) {
     id: String(item._id || item.id || item.title),
     name: item.title,
     price: item.rent,
+    rating: Number.isFinite(Number(item.rating)) ? Number(item.rating) : createDisplayRating(item._id || item.title),
+    address: item.address || item.area || "",
     source: "owner",
     lat,
     lon,

@@ -108,6 +108,22 @@ function getElementCoordinates(element) {
   };
 }
 
+function formatAddress(tags = {}, fallback = "") {
+  const parts = [
+    tags["addr:housenumber"],
+    tags["addr:street"],
+    tags["addr:suburb"] || tags["addr:neighbourhood"],
+    tags["addr:city"],
+    tags.operator
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+
+  return fallback.split(",").slice(0, 3).join(", ");
+}
+
 function toNearbyPlace(element, type, origin) {
   const coordinates = getElementCoordinates(element);
 
@@ -123,7 +139,7 @@ function toNearbyPlace(element, type, origin) {
     lat: Number(coordinates.lat),
     lng: Number(coordinates.lng),
     distanceKm: calculateDistanceKm(origin.lat, origin.lng, coordinates.lat, coordinates.lng),
-    address: element.tags?.["addr:full"] || element.tags?.["addr:street"] || "",
+    address: element.tags?.["addr:full"] || formatAddress(element.tags, origin.displayName),
     source: "openstreetmap"
   };
 }

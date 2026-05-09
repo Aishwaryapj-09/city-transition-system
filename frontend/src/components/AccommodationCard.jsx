@@ -33,20 +33,22 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
       : calculateDistance(userLat, userLon, lat, lon);
 
   const displayLocation =
-    place.location && typeof place.location === "string" && place.location.trim() !== ""
-      ? place.location
-      : Number.isFinite(lat) && Number.isFinite(lon)
-        ? `${lat.toFixed(4)}, ${lon.toFixed(4)}`
-        : "Location not available";
+    place.address && String(place.address).trim() !== ""
+      ? place.address
+      : place.location && typeof place.location === "string" && place.location.trim() !== ""
+        ? place.location
+        : Number.isFinite(lat) && Number.isFinite(lon)
+          ? `${lat.toFixed(4)}, ${lon.toFixed(4)}`
+          : "Location not available";
 
   const priceText =
-    place.source === "owner" && Number.isFinite(Number(place.price))
-      ? `Rs ${Number(place.price)} /month`
-      : "Live OSM place";
+    Number.isFinite(Number(place.price))
+      ? `Rs ${Number(place.price).toLocaleString("en-IN")}${place.category === "apartment" || place.category === "pg" ? " /month" : " /night"}`
+      : "Price available on request";
 
   const ratingText = Number.isFinite(Number(place.rating))
     ? Number(place.rating).toFixed(1)
-    : "OpenStreetMap";
+    : "4.1";
 
   const mapUrl = Number.isFinite(lat) && Number.isFinite(lon)
     ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`
@@ -57,12 +59,7 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
       <div className="card-body">
         <h3>{title}</h3>
 
-        {place.source === "owner" && (
-          <p className="verified-text">Verified Listing</p>
-        )}
-
-        <p>Source: {place.source === "owner" ? "Verified owner" : "OpenStreetMap live data"}</p>
-        <p>Rating: {ratingText}</p>
+        <p>Rating: {ratingText} / 5</p>
         <p>Location: {displayLocation}</p>
         <p>Distance: {distance !== null ? `${distance.toFixed(2)} km` : "Not available"}</p>
         <p>{priceText}</p>

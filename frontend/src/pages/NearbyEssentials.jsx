@@ -14,11 +14,9 @@ function NearbyEssentials() {
   const [coordinates, setCoordinates] = useState("");
   const [type, setType] = useState("hospital");
   const [radius, setRadius] = useState("3000");
+  const [sortBy, setSortBy] = useState("distance");
   const [places, setPlaces] = useState([]);
-  const [allPlaces, setAllPlaces] = useState([]);
-  const [distanceFilter, setDistanceFilter] = useState("");
   const [status, setStatus] = useState("");
-  const [searchMode, setSearchMode] = useState("place");
 
   const useCurrentLocation = () => {
     setStatus("Getting your location...");
@@ -29,7 +27,7 @@ function NearbyEssentials() {
         const lng = position.coords.longitude.toFixed(6);
 
         setCoordinates(`${lat},${lng}`);
-        setSearchMode("current");
+        setArea("");
         setStatus("Current location selected");
       },
       () => {
@@ -40,7 +38,17 @@ function NearbyEssentials() {
 
   const useAreaSearch = (event) => {
     setArea(event.target.value);
-    setSearchMode("place");
+    setCoordinates("");
+  };
+
+  const sortResults = (results) => {
+    return [...results].sort((a, b) => {
+      if (sortBy === "name") {
+        return String(a.name).localeCompare(String(b.name));
+      }
+
+      return Number(a.distanceKm || 9999) - Number(b.distanceKm || 9999);
+    });
   };
 
   const searchEssentials = async () => {
@@ -49,14 +57,14 @@ function NearbyEssentials() {
       radius
     };
 
-    if (searchMode === "current" && coordinates) {
+    if (coordinates) {
       const [lat, lng] = coordinates.split(",").map((item) => item.trim());
       params.lat = lat;
       params.lng = lng;
-    } else if (searchMode === "place" && area.trim()) {
+    } else if (area.trim()) {
       params.location = area.trim();
     } else {
-      setStatus(searchMode === "current" ? "Click Use My Location first" : "Enter a place name");
+      setStatus("Enter a place name or use your current location");
       return;
     }
 
@@ -66,74 +74,41 @@ function NearbyEssentials() {
       const response = await API.get("/nearby", { params });
       const results = response.data.places || [];
 
-      setPlaces(results);
-      setAllPlaces(results);
-      setStatus(`${response.data.count || 0} places found near ${response.data.search?.displayName || "selected location"}`);
+      setPlaces(sortResults(results));
+      setStatus(`${response.data.count || 0} places found`);
     } catch (error) {
       setPlaces([]);
-      setAllPlaces([]);
       setStatus(error.response?.data?.message || error.message || "Unable to fetch nearby essentials");
     }
-  };
-
-  const applyDistanceFilter = () => {
-    if (!distanceFilter) {
-      setPlaces(allPlaces);
-      return;
-    }
-
-    setPlaces(allPlaces.filter((place) => {
-      const distance = Number(place.distanceKm);
-
-      if (!Number.isFinite(distance)) {
-        return false;
-      }
-
-      return distanceFilter === "10+"
-        ? distance > 10
-        : distance <= Number(distanceFilter);
-    }));
   };
 
   return (
     <div className="acc-container essentials-page">
       <h1>Nearby Essentials Finder</h1>
-      <p>Find real hospitals, schools, banks, supermarkets and bus stops using live OpenStreetMap data.</p>
+      <p>Find hospitals, schools, banks, supermarkets and bus stops near a place.</p>
 
       <div className="search-area essentials-search">
-        <div className="mode-toggle" aria-label="Search mode">
-          <button
-            type="button"
-            className={searchMode === "place" ? "active" : ""}
-            onClick={() => setSearchMode("place")}
-          >
-            Place Name
-          </button>
-          <button
-            type="button"
-            className={searchMode === "current" ? "active" : ""}
-            onClick={() => setSearchMode("current")}
-          >
-            My Location
-          </button>
-        </div>
-
         <input
           aria-label="Area name"
-          placeholder="Enter area name, e.g. Yeshwanthpur, Bengaluru"
+          placeholder="Enter place name"
           value={area}
           onChange={useAreaSearch}
-          disabled={searchMode === "current"}
         />
 
-        <button className="loc-btn" onClick={useCurrentLocation} disabled={searchMode !== "current"}>
+        <button className="loc-btn" onClick={useCurrentLocation}>
           Use My Location
         </button>
 
-        {searchMode === "current" && coordinates && (
+        {coordinates && (
           <p className="status-text">Using current location: {coordinates}</p>
         )}
 
+        <button className="search-btn" onClick={searchEssentials}>
+          Find Essentials
+        </button>
+      </div>
+
+      <div className="filter-bar">
         <select value={type} onChange={(event) => setType(event.target.value)}>
           {ESSENTIAL_TYPES.map((item) => (
             <option key={item.value} value={item.value}>
@@ -149,20 +124,12 @@ function NearbyEssentials() {
           <option value="10000">10 km</option>
         </select>
 
-        <select value={distanceFilter} onChange={(event) => setDistanceFilter(event.target.value)}>
-          <option value="">Distance Filter</option>
-          <option value="1">Within 1 km</option>
-          <option value="3">Within 3 km</option>
-          <option value="5">Within 5 km</option>
-          <option value="10">Within 10 km</option>
-          <option value="10+">Greater than 10 km</option>
+        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          <option value="distance">Nearest first</option>
+          <option value="name">Name A-Z</option>
         </select>
 
-        <button className="search-btn" onClick={searchEssentials}>
-          Search
-        </button>
-
-        <button className="search-btn secondary-btn" onClick={applyDistanceFilter}>
+        <button onClick={searchEssentials}>
           Apply Filter
         </button>
       </div>
@@ -173,9 +140,8 @@ function NearbyEssentials() {
         {places.map((place) => (
           <div className="acc-card essentials-card" key={place.id}>
             <div className="card-body">
-              <span className="type-pill">{place.category}</span>
               <h3>{place.name}</h3>
-              <p>{place.address || "Address details not listed in OpenStreetMap"}</p>
+              {place.address && <p>{place.address}</p>}
               <p>
                 Location: {Number(place.lat).toFixed(4)}, {Number(place.lng).toFixed(4)}
               </p>
