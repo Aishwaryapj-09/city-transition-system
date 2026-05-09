@@ -20,12 +20,48 @@ describe("Nearby Essentials Service Unit Tests", () => {
     expect(query).toContain("out center tags");
   });
 
-  it("should validate supported essentials only", () => {
-    expect(() => nearbyService.validateNearbyInput({
+  it("should validate supported essentials only", async () => {
+    await expect(nearbyService.validateNearbyInput({
       lat: "12.9716",
       lng: "77.5946",
       type: "mall"
-    })).toThrow("type must be one of");
+    })).rejects.toThrow("type must be one of");
+  });
+
+  it("should geocode area name before querying nearby essentials", async () => {
+    axios.get.mockResolvedValue({
+      data: [
+        {
+          lat: "13.0540",
+          lon: "77.5044",
+          display_name: "Yeshwanthpur, Bengaluru"
+        }
+      ]
+    });
+
+    axios.post.mockResolvedValue({
+      data: {
+        elements: []
+      }
+    });
+
+    const result = await nearbyService.findNearbyEssentials({
+      location: "Yeshwanthpur",
+      type: "bank",
+      radius: "3000"
+    });
+
+    expect(axios.get).toHaveBeenCalledWith(
+      "https://nominatim.openstreetmap.org/search",
+      expect.objectContaining({
+        params: expect.objectContaining({ q: "Yeshwanthpur" })
+      })
+    );
+    expect(result.search).toMatchObject({
+      lat: 13.054,
+      lng: 77.5044,
+      displayName: "Yeshwanthpur, Bengaluru"
+    });
   });
 
   it("should convert mocked Overpass response into nearby places", async () => {

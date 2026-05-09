@@ -10,13 +10,15 @@ const ESSENTIAL_TYPES = [
 ];
 
 function NearbyEssentials() {
-  const [location, setLocation] = useState("12.9716,77.5946");
+  const [area, setArea] = useState("Yeshwanthpur, Bengaluru");
+  const [coordinates, setCoordinates] = useState("");
   const [type, setType] = useState("hospital");
   const [radius, setRadius] = useState("3000");
   const [places, setPlaces] = useState([]);
   const [allPlaces, setAllPlaces] = useState([]);
   const [distanceFilter, setDistanceFilter] = useState("");
   const [status, setStatus] = useState("");
+  const [searchMode, setSearchMode] = useState("place");
 
   const useCurrentLocation = () => {
     setStatus("Getting your location...");
@@ -26,42 +28,51 @@ function NearbyEssentials() {
         const lat = position.coords.latitude.toFixed(6);
         const lng = position.coords.longitude.toFixed(6);
 
-        setLocation(`${lat},${lng}`);
-        setStatus("Location ready");
+        setCoordinates(`${lat},${lng}`);
+        setSearchMode("current");
+        setStatus("Current location selected");
       },
       () => {
-        setStatus("Location permission was not available");
+        setStatus("Location permission was not available. Enter an area name instead.");
       }
     );
   };
 
-  const searchEssentials = async () => {
-    const [lat, lng] = location.split(",").map((item) => item.trim());
+  const useAreaSearch = (event) => {
+    setArea(event.target.value);
+    setSearchMode("place");
+  };
 
-    if (!lat || !lng) {
-      setStatus("Enter location as latitude,longitude");
+  const searchEssentials = async () => {
+    const params = {
+      type,
+      radius
+    };
+
+    if (searchMode === "current" && coordinates) {
+      const [lat, lng] = coordinates.split(",").map((item) => item.trim());
+      params.lat = lat;
+      params.lng = lng;
+    } else if (searchMode === "place" && area.trim()) {
+      params.location = area.trim();
+    } else {
+      setStatus(searchMode === "current" ? "Click Use My Location first" : "Enter a place name");
       return;
     }
 
     try {
-      setStatus("Searching nearby essentials...");
+      setStatus("Searching real nearby essentials...");
 
-      const response = await API.get("/nearby", {
-        params: {
-          lat,
-          lng,
-          type,
-          radius
-        }
-      });
+      const response = await API.get("/nearby", { params });
+      const results = response.data.places || [];
 
-      setPlaces(response.data.places || []);
-      setAllPlaces(response.data.places || []);
-      setStatus(`${response.data.count || 0} places found`);
+      setPlaces(results);
+      setAllPlaces(results);
+      setStatus(`${response.data.count || 0} places found near ${response.data.search?.displayName || "selected location"}`);
     } catch (error) {
       setPlaces([]);
       setAllPlaces([]);
-      setStatus(error.response?.data?.message || "Unable to fetch nearby essentials");
+      setStatus(error.response?.data?.message || error.message || "Unable to fetch nearby essentials");
     }
   };
 
@@ -87,18 +98,41 @@ function NearbyEssentials() {
   return (
     <div className="acc-container essentials-page">
       <h1>Nearby Essentials Finder</h1>
-      <p>Find hospitals, schools, banks, supermarkets and bus stops around your new city area.</p>
+      <p>Find real hospitals, schools, banks, supermarkets and bus stops using live OpenStreetMap data.</p>
 
       <div className="search-area essentials-search">
-        <button className="loc-btn" onClick={useCurrentLocation}>
+        <div className="mode-toggle" aria-label="Search mode">
+          <button
+            type="button"
+            className={searchMode === "place" ? "active" : ""}
+            onClick={() => setSearchMode("place")}
+          >
+            Place Name
+          </button>
+          <button
+            type="button"
+            className={searchMode === "current" ? "active" : ""}
+            onClick={() => setSearchMode("current")}
+          >
+            My Location
+          </button>
+        </div>
+
+        <input
+          aria-label="Area name"
+          placeholder="Enter area name, e.g. Yeshwanthpur, Bengaluru"
+          value={area}
+          onChange={useAreaSearch}
+          disabled={searchMode === "current"}
+        />
+
+        <button className="loc-btn" onClick={useCurrentLocation} disabled={searchMode !== "current"}>
           Use My Location
         </button>
 
-        <input
-          placeholder="12.9716,77.5946"
-          value={location}
-          onChange={(event) => setLocation(event.target.value)}
-        />
+        {searchMode === "current" && coordinates && (
+          <p className="status-text">Using current location: {coordinates}</p>
+        )}
 
         <select value={type} onChange={(event) => setType(event.target.value)}>
           {ESSENTIAL_TYPES.map((item) => (

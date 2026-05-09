@@ -1,8 +1,7 @@
-const axios = require("axios");
 const Listing = require("../models/listing.model");
 const { calculateDistanceKm } = require("../services/distance.service");
-
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+const { fetchOverpass } = require("../services/overpass.service");
+const { resolveLocation } = require("../services/geo.service");
 
 function getElementCoordinates(element) {
   return {
@@ -16,7 +15,7 @@ function getAccommodationCategory(tags = {}) {
     return "hostel";
   }
 
-  if (tags.tourism === "hotel") {
+  if (tags.tourism === "hotel" || tags.tourism === "motel") {
     return "hotel";
   }
 
@@ -75,43 +74,6 @@ function groupAccommodation(results) {
   };
 }
 
-async function resolveLocation(location) {
-  if (location.includes(",")) {
-    const [lat, lng] = location.split(",").map(Number);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      const error = new Error("Location coordinates must be valid latitude,longitude");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    return { lat, lng };
-  }
-
-  const geo = await axios.get("https://nominatim.openstreetmap.org/search", {
-    params: {
-      q: location,
-      format: "json",
-      limit: 1
-    },
-    headers: {
-      "User-Agent": "city-transition-system-app"
-    },
-    timeout: 10000
-  });
-
-  if (!geo.data || geo.data.length === 0) {
-    const error = new Error("Location not found");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  return {
-    lat: Number(geo.data[0].lat),
-    lng: Number(geo.data[0].lon)
-  };
-}
-
 exports.searchAccommodation = async (req, res) => {
   try {
     const { location } = req.query;
@@ -125,26 +87,36 @@ exports.searchAccommodation = async (req, res) => {
     const origin = await resolveLocation(location);
     const radiusMeters = 5000;
 
-    const ownerListings = await Listing.find({
-      isVerified: true,
-      location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [origin.lng, origin.lat]
-          },
-          $maxDistance: radiusMeters
+    let ownerListings = [];
+
+    try {
+      ownerListings = await Listing.find({
+        isVerified: true,
+        location: {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: [origin.lng, origin.lat]
+            },
+            $maxDistance: radiusMeters
+          }
         }
-      }
-    });
+      });
+    } catch {
+      ownerListings = [];
+    }
 
     const query = `
       [out:json][timeout:25];
       (
         node["tourism"="hotel"](around:${radiusMeters},${origin.lat},${origin.lng});
         way["tourism"="hotel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        relation["tourism"="hotel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        node["tourism"="motel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        way["tourism"="motel"](around:${radiusMeters},${origin.lat},${origin.lng});
         node["tourism"="hostel"](around:${radiusMeters},${origin.lat},${origin.lng});
         way["tourism"="hostel"](around:${radiusMeters},${origin.lat},${origin.lng});
+        relation["tourism"="hostel"](around:${radiusMeters},${origin.lat},${origin.lng});
         node["tourism"="guest_house"](around:${radiusMeters},${origin.lat},${origin.lng});
         way["tourism"="guest_house"](around:${radiusMeters},${origin.lat},${origin.lng});
         node["building"="apartments"](around:${radiusMeters},${origin.lat},${origin.lng});
@@ -153,15 +125,9 @@ exports.searchAccommodation = async (req, res) => {
       out center tags;
     `;
 
-    const apiResponse = await axios.post(OVERPASS_URL, query, {
-      headers: {
-        "Content-Type": "text/plain",
-        "User-Agent": "city-transition-system-app"
-      },
-      timeout: 15000
-    });
+    const apiResponse = await fetchOverpass(query, 20000);
 
-    const apiListings = (apiResponse.data.elements || [])
+    const apiListings = (apiResponse.elements || [])
       .map((element) => normalizeApiListing(element, origin))
       .filter(Boolean);
 
@@ -190,7 +156,7 @@ exports.searchAccommodation = async (req, res) => {
     const statusCode = error.statusCode || 500;
 
     return res.status(statusCode).json({
-      message: statusCode === 500 ? "Server error while searching accommodation" : error.message
+      message: statusCode === 500 ? `Live accommodation fetch failed: ${error.message}` : error.message
     });
   }
 };

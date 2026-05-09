@@ -1,7 +1,6 @@
-const axios = require("axios");
 const { calculateDistanceKm } = require("./distance.service");
-
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+const { parseCoordinatePair, resolveLocation, validateCoordinates } = require("./geo.service");
+const { fetchOverpass } = require("./overpass.service");
 
 const ESSENTIAL_TYPES = {
   hospital: {
@@ -42,24 +41,38 @@ function parseCoordinate(value, name) {
   return coordinate;
 }
 
-function validateNearbyInput({ lat, lng, type, radius = 3000 }) {
+async function resolveNearbyLocation(input) {
+  if (input.location) {
+    return resolveLocation(input.location);
+  }
+
+  const coordinates = parseCoordinatePair(`${input.lat},${input.lng}`);
+
+  if (!coordinates) {
+    throw createValidationError("Enter a place name or allow current location");
+  }
+
+  validateCoordinates(coordinates.lat, coordinates.lng);
+
+  return {
+    ...coordinates,
+    displayName: `${coordinates.lat},${coordinates.lng}`
+  };
+}
+
+async function validateNearbyInput(input) {
+  const { type, radius = 3000 } = input;
   const normalizedType = String(type || "").trim().toLowerCase();
 
   if (!ESSENTIAL_TYPES[normalizedType]) {
     throw createValidationError("type must be one of hospital, school, bank, supermarket, bus_stop");
   }
 
-  const parsedLat = parseCoordinate(lat, "lat");
-  const parsedLng = parseCoordinate(lng, "lng");
+  const resolvedLocation = await resolveNearbyLocation(input);
+  const parsedLat = parseCoordinate(resolvedLocation.lat, "lat");
+  const parsedLng = parseCoordinate(resolvedLocation.lng, "lng");
   const parsedRadius = Number(radius);
-
-  if (parsedLat < -90 || parsedLat > 90) {
-    throw createValidationError("lat must be between -90 and 90");
-  }
-
-  if (parsedLng < -180 || parsedLng > 180) {
-    throw createValidationError("lng must be between -180 and 180");
-  }
+  validateCoordinates(parsedLat, parsedLng);
 
   if (!Number.isFinite(parsedRadius) || parsedRadius < 100 || parsedRadius > 10000) {
     throw createValidationError("radius must be between 100 and 10000 meters");
@@ -69,7 +82,8 @@ function validateNearbyInput({ lat, lng, type, radius = 3000 }) {
     lat: parsedLat,
     lng: parsedLng,
     radius: parsedRadius,
-    type: normalizedType
+    type: normalizedType,
+    displayName: resolvedLocation.displayName
   };
 }
 
@@ -115,18 +129,12 @@ function toNearbyPlace(element, type, origin) {
 }
 
 async function findNearbyEssentials(input) {
-  const options = validateNearbyInput(input);
+  const options = await validateNearbyInput(input);
   const query = buildNearbyQuery(options);
 
-  const response = await axios.post(OVERPASS_URL, query, {
-    headers: {
-      "Content-Type": "text/plain",
-      "User-Agent": "city-transition-system-app"
-    },
-    timeout: 10000
-  });
+  const response = await fetchOverpass(query, 20000);
 
-  const places = (response.data.elements || [])
+  const places = (response.elements || [])
     .map((element) => toNearbyPlace(element, options.type, options))
     .filter(Boolean)
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))

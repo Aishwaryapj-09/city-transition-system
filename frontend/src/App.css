@@ -25,6 +25,33 @@
   font-size:14px;
 }
 
+.search-area input:disabled{
+  opacity:0.7;
+  cursor:not-allowed;
+}
+
+.mode-toggle{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+
+.mode-toggle button{
+  padding:10px;
+  border:1px solid #2f6e87;
+  border-radius:6px;
+  background:#132f3a;
+  color:#dcecf3;
+  cursor:pointer;
+}
+
+.mode-toggle button.active{
+  background:#0d6efd;
+  border-color:#0d6efd;
+  color:white;
+  font-weight:700;
+}
+
 
 /* Buttons */
 
@@ -181,6 +208,11 @@ border:none;
   background:#0d6efd;
   color:white;
   cursor:pointer;
+}
+
+.loc-btn:disabled{
+  opacity:0.55;
+  cursor:not-allowed;
 }
 
 .essentials-search select{

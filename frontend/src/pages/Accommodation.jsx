@@ -3,7 +3,9 @@ import AccommodationCard from "../components/AccommodationCard";
 import API from "../services/api";
 
 function Accommodation() {
-  const [location, setLocation] = useState("");
+  const [area, setArea] = useState("Yeshwanthpur, Bengaluru");
+  const [coordinates, setCoordinates] = useState("");
+  const [searchMode, setSearchMode] = useState("place");
   const [hotels, setHotels] = useState([]);
   const [hostels, setHostels] = useState([]);
   const [apartments, setApartments] = useState([]);
@@ -16,6 +18,7 @@ function Accommodation() {
   const [userLat, setUserLat] = useState(null);
   const [userLon, setUserLon] = useState(null);
   const [status, setStatus] = useState("");
+  const [resolvedPlace, setResolvedPlace] = useState("");
 
   const updateResults = (data) => {
     setHotels(data.hotels || []);
@@ -26,11 +29,14 @@ function Accommodation() {
     setAllApartments(data.apartments || []);
     setUserLat(data.searchLocation?.lat);
     setUserLon(data.searchLocation?.lng);
+    setResolvedPlace(data.searchLocation?.displayName || "");
   };
 
   const searchPlaces = async () => {
-    if (!location.trim()) {
-      setStatus("Enter an area or use your current location");
+    const location = searchMode === "current" ? coordinates : area.trim();
+
+    if (!location) {
+      setStatus(searchMode === "current" ? "Click Use My Location first" : "Enter a place name");
       return;
     }
 
@@ -64,13 +70,19 @@ function Accommodation() {
         const lat = pos.coords.latitude.toFixed(6);
         const lon = pos.coords.longitude.toFixed(6);
 
-        setLocation(`${lat},${lon}`);
-        setStatus("Location ready");
+        setCoordinates(`${lat},${lon}`);
+        setSearchMode("current");
+        setStatus("Current location selected");
       },
       () => {
-        setStatus("Location permission was not available");
+        setStatus("Location permission was not available. Enter an area name instead.");
       }
     );
+  };
+
+  const useAreaSearch = (event) => {
+    setArea(event.target.value);
+    setSearchMode("place");
   };
 
   const applyFilters = (places) => {
@@ -117,15 +129,38 @@ function Accommodation() {
       <p>Discover verified owner listings and live OpenStreetMap places in a city.</p>
 
       <div className="search-area">
-        <button className="loc-btn" onClick={useLocation}>
+        <div className="mode-toggle" aria-label="Search mode">
+          <button
+            type="button"
+            className={searchMode === "place" ? "active" : ""}
+            onClick={() => setSearchMode("place")}
+          >
+            Place Name
+          </button>
+          <button
+            type="button"
+            className={searchMode === "current" ? "active" : ""}
+            onClick={() => setSearchMode("current")}
+          >
+            My Location
+          </button>
+        </div>
+
+        <input
+          aria-label="Area name"
+          placeholder="Enter area name, e.g. Yeshwanthpur, Bengaluru"
+          value={area}
+          onChange={useAreaSearch}
+          disabled={searchMode === "current"}
+        />
+
+        <button className="loc-btn" onClick={useLocation} disabled={searchMode !== "current"}>
           Use My Location
         </button>
 
-        <input
-          placeholder="Enter area or latitude,longitude"
-          value={location}
-          onChange={(event) => setLocation(event.target.value)}
-        />
+        {searchMode === "current" && coordinates && (
+          <p className="status-text">Using current location: {coordinates}</p>
+        )}
 
         <button className="search-btn" onClick={searchPlaces}>
           Search
@@ -165,6 +200,7 @@ function Accommodation() {
       </div>
 
       {status && <p className="status-text">{status}</p>}
+      {resolvedPlace && <p className="status-text">Resolved place: {resolvedPlace}</p>}
 
       <h2 className="section-title">Hotels Nearby</h2>
       <div className="acc-grid">

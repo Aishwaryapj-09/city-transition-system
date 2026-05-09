@@ -14,7 +14,8 @@ describe("Accommodation API", () => {
       data: [
         {
           lat: "12.9716",
-          lon: "77.5946"
+          lon: "77.5946",
+          display_name: "Bengaluru, Karnataka"
         }
       ]
     });
@@ -62,10 +63,17 @@ describe("Accommodation API", () => {
       title: "Live Mock Hotel",
       source: "openstreetmap"
     });
+    expect(res.body.searchLocation.displayName).toBe("Bengaluru, Karnataka");
     expect(res.body.hotels[0].distanceKm).toEqual(expect.any(Number));
   });
 
   it("should keep verified owner listings in the result set", async () => {
+    axios.get.mockResolvedValueOnce({
+      data: {
+        display_name: "Current Location Area"
+      }
+    });
+
     Listing.find.mockResolvedValue([
       {
         _id: "owner-1",
@@ -89,6 +97,7 @@ describe("Accommodation API", () => {
       source: "owner",
       price: 6000
     });
+    expect(res.body.searchLocation.displayName).toBe("Current Location Area");
     expect(res.body.apartments[0].distanceKm).toEqual(expect.any(Number));
   });
 
