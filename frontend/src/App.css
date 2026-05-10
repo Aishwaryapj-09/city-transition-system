@@ -647,6 +647,7 @@
 
 .language-page button:focus-visible,
 .language-page input:focus-visible,
+.language-page textarea:focus-visible,
 .language-page a:focus-visible,
 .phrase-card:focus-visible{
   outline:3px solid #ffe6a7;
@@ -743,12 +744,98 @@
   line-height:1.2;
 }
 
+.custom-translation-panel{
+  display:grid;
+  grid-template-columns:minmax(240px, 0.8fr) minmax(280px, 1.2fr);
+  gap:18px;
+  align-items:start;
+  margin:0 0 22px;
+  padding:18px;
+  border:1px solid rgba(184,243,214,0.18);
+  border-radius:8px;
+  background:#10262f;
+}
+
+.custom-translation-panel h2{
+  margin:0 0 8px;
+  color:#f4fbff;
+  font-size:22px;
+  line-height:1.25;
+}
+
+.custom-translation-panel p{
+  margin:0;
+  color:#c9d8e0;
+  line-height:1.5;
+}
+
+.custom-translation-panel form{
+  display:grid;
+  gap:10px;
+}
+
+.custom-translation-panel label{
+  color:#f4fbff;
+  font-weight:800;
+}
+
+.custom-translation-panel textarea{
+  width:100%;
+  min-height:92px;
+  resize:vertical;
+  box-sizing:border-box;
+}
+
+.custom-translation-panel .search-btn{
+  width:max-content;
+  min-width:150px;
+  margin:0;
+}
+
+.compact-status{
+  grid-column:2;
+  margin:0;
+}
+
+.translation-result{
+  grid-column:2;
+  padding:14px;
+  border:1px solid rgba(141,216,255,0.16);
+  border-radius:8px;
+  background:#1e2d36;
+}
+
+.translation-result span{
+  display:block;
+  margin-bottom:8px;
+  color:#aac1cb;
+  font-size:13px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.translation-result strong{
+  display:block;
+  color:#b8f3d6;
+  font-size:25px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.translation-result p{
+  margin:8px 0 0;
+}
+
 .phrase-toolbar{
   display:grid;
   grid-template-columns:minmax(250px, 360px) 1fr;
   gap:18px;
   align-items:end;
   margin-bottom:22px;
+}
+
+.phrase-toolbar.categories-only{
+  display:block;
 }
 
 .phrase-search input{
@@ -976,9 +1063,19 @@
 
   .language-search-panel,
   .language-detection,
+  .custom-translation-panel,
   .phrase-toolbar,
   .language-side-lists{
     grid-template-columns:1fr;
+  }
+
+  .compact-status,
+  .translation-result{
+    grid-column:1;
+  }
+
+  .custom-translation-panel .search-btn{
+    width:100%;
   }
 
   .language-header h1{

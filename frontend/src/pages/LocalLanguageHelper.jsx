@@ -10,13 +10,19 @@ const CATEGORY_META = {
 
 const FAVORITES_KEY = "languageHelperFavorites";
 const RECENT_PHRASES_KEY = "languageHelperRecentPhrases";
-const RECENT_LOCALITIES_KEY = "languageHelperRecentLocalities";
 const LANGUAGE_LOCALES = {
   Kannada: "kn",
   Tamil: "ta",
   Telugu: "te",
   Marathi: "mr",
-  Hindi: "hi"
+  Hindi: "hi",
+  Malayalam: "ml",
+  Gujarati: "gu",
+  Bengali: "bn",
+  Punjabi: "pa",
+  Odia: "or",
+  Assamese: "as",
+  Konkani: "kok"
 };
 
 const readStorage = (key, fallback) => {
@@ -35,11 +41,12 @@ function LocalLanguageHelper() {
   const [place, setPlace] = useState("");
   const [helperData, setHelperData] = useState(null);
   const [status, setStatus] = useState("");
-  const [phraseSearch, setPhraseSearch] = useState("");
+  const [customText, setCustomText] = useState("");
+  const [translation, setTranslation] = useState(null);
+  const [translationStatus, setTranslationStatus] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [favorites, setFavorites] = useState(() => readStorage(FAVORITES_KEY, []));
   const [recentPhrases, setRecentPhrases] = useState(() => readStorage(RECENT_PHRASES_KEY, []));
-  const [recentLocalities, setRecentLocalities] = useState(() => readStorage(RECENT_LOCALITIES_KEY, []));
 
   useEffect(() => {
     writeStorage(FAVORITES_KEY, favorites);
@@ -49,10 +56,6 @@ function LocalLanguageHelper() {
     writeStorage(RECENT_PHRASES_KEY, recentPhrases);
   }, [recentPhrases]);
 
-  useEffect(() => {
-    writeStorage(RECENT_LOCALITIES_KEY, recentLocalities);
-  }, [recentLocalities]);
-
   const categories = useMemo(() => {
     const detectedCategories = helperData?.categories || [];
     return ["All", ...detectedCategories];
@@ -61,20 +64,10 @@ function LocalLanguageHelper() {
   const favoriteIds = useMemo(() => new Set(favorites.map((phrase) => phrase.id)), [favorites]);
 
   const visiblePhrases = useMemo(() => {
-    const query = phraseSearch.trim().toLowerCase();
-
     return (helperData?.phrases || []).filter((phrase) => {
-      const matchesCategory = activeCategory === "All" || phrase.category === activeCategory;
-      const searchableText = [
-        phrase.englishPhrase,
-        phrase.localPhrase,
-        phrase.pronunciation,
-        phrase.category
-      ].join(" ").toLowerCase();
-
-      return matchesCategory && (!query || searchableText.includes(query));
+      return activeCategory === "All" || phrase.category === activeCategory;
     });
-  }, [activeCategory, helperData, phraseSearch]);
+  }, [activeCategory, helperData]);
 
   const loadLanguageHelper = async (event, selectedPlace = place) => {
     event?.preventDefault();
@@ -87,7 +80,7 @@ function LocalLanguageHelper() {
     }
 
     try {
-      setStatus("Detecting city and local language...");
+      setStatus("Locating state and local language...");
 
       const response = await API.get("/language-helper", {
         params: { place: trimmedPlace }
@@ -95,27 +88,44 @@ function LocalLanguageHelper() {
 
       setHelperData(response.data);
       setActiveCategory("All");
-      setPhraseSearch("");
+      setTranslation(null);
+      setTranslationStatus("");
       setStatus(`${response.data.detected.city} detected. ${response.data.detected.language} phrases loaded.`);
-      rememberLocality(response.data.input, response.data.detected);
     } catch (error) {
       setHelperData(null);
       setStatus(error.response?.data?.message || error.message || "Unable to load local language helper");
     }
   };
 
-  const rememberLocality = (input, detected) => {
-    const nextEntry = {
-      id: `${input}-${detected.city}`.toLowerCase(),
-      input,
-      city: detected.city,
-      language: detected.language
-    };
+  const translateCustomText = async (event) => {
+    event.preventDefault();
 
-    setRecentLocalities((items) => [
-      nextEntry,
-      ...items.filter((item) => item.id !== nextEntry.id)
-    ].slice(0, 6));
+    if (!helperData) {
+      setTranslationStatus("Detect a place first");
+      return;
+    }
+
+    const trimmedText = customText.trim();
+
+    if (!trimmedText) {
+      setTranslationStatus("Enter an English sentence to translate");
+      return;
+    }
+
+    try {
+      setTranslationStatus("Translating to local language...");
+
+      const response = await API.post("/language-helper/translate", {
+        place: helperData.input,
+        text: trimmedText
+      });
+
+      setTranslation(response.data);
+      setTranslationStatus(`Translated to ${response.data.detected.language}`);
+    } catch (error) {
+      setTranslation(null);
+      setTranslationStatus(error.response?.data?.message || error.message || "Unable to translate this sentence");
+    }
   };
 
   const rememberPhrase = (phrase) => {
@@ -150,11 +160,6 @@ function LocalLanguageHelper() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const selectRecentLocality = (item) => {
-    setPlace(item.input);
-    loadLanguageHelper(null, item.input);
-  };
-
   return (
     <main className="acc-container language-page" id="main-content">
       <a className="skip-link" href="#phrase-results">Skip to phrases</a>
@@ -162,7 +167,7 @@ function LocalLanguageHelper() {
         <div>
           <p className="eyebrow">Relocation survival phrases</p>
           <h1>Local Language Helper</h1>
-          <p id="language-helper-description">Type any area or city. The helper detects the parent city and loads the local language phrases you are most likely to need first.</p>
+          <p id="language-helper-description">Enter an area, city, or landmark. The helper locates its state and loads the local language phrases you are most likely to need first.</p>
         </div>
       </div>
 
@@ -172,35 +177,19 @@ function LocalLanguageHelper() {
         aria-describedby="language-helper-description"
       >
         <div className="field-block">
-          <label htmlFor="language-place">Search locality or city</label>
+          <label htmlFor="language-place">Enter place</label>
           <input
             id="language-place"
             value={place}
             onChange={(event) => setPlace(event.target.value)}
-            placeholder="Whitefield, Tambaram, Gachibowli, Koramangala..."
+            placeholder="Whitefield, Kochi, Ahmedabad, Panaji..."
             autoComplete="address-level2"
           />
         </div>
         <button className="search-btn primary-action" type="submit">
-          Detect Language
+          Find State & Language
         </button>
       </form>
-
-      {recentLocalities.length > 0 && (
-        <div className="recent-localities" aria-label="Recently searched localities">
-          <span>Recent searches</span>
-          {recentLocalities.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => selectRecentLocality(item)}
-              aria-label={`Search ${item.input}, detected as ${item.city} ${item.language}`}
-            >
-              {item.input}
-            </button>
-          ))}
-        </div>
-      )}
 
       {status && (
         <p className="status-text" role="status" aria-live="polite">
@@ -212,14 +201,14 @@ function LocalLanguageHelper() {
         <>
           <section className="language-detection" aria-label="Detected location and language">
             <div>
-              <span>Detected city</span>
+              <span>Detected place</span>
               <strong>{helperData.detected.city}</strong>
               <small>{helperData.detected.state}</small>
             </div>
             <div>
               <span>Local language</span>
               <strong>{helperData.detected.language}</strong>
-              <small>Matched from {helperData.detected.locality}</small>
+              <small>Mapped from {helperData.detected.state}</small>
             </div>
             <div>
               <span>Phrase set</span>
@@ -228,17 +217,39 @@ function LocalLanguageHelper() {
             </div>
           </section>
 
-          <section className="phrase-toolbar" aria-label="Phrase filters">
-            <div className="field-block phrase-search">
-              <label htmlFor="phrase-search">Search phrases</label>
-              <input
-                id="phrase-search"
-                value={phraseSearch}
-                onChange={(event) => setPhraseSearch(event.target.value)}
-                placeholder="Search English, translation, pronunciation..."
-              />
+          <section className="custom-translation-panel" aria-label="Translate custom English sentence">
+            <div>
+              <h2>Translate Your Sentence</h2>
+              <p>Type what you need to say in English. It will use the detected local language for this place.</p>
             </div>
+            <form onSubmit={translateCustomText}>
+              <label htmlFor="custom-translation-text">English sentence</label>
+              <textarea
+                id="custom-translation-text"
+                value={customText}
+                onChange={(event) => setCustomText(event.target.value)}
+                placeholder="I need help finding a rented room near this area"
+                rows="3"
+              />
+              <button className="search-btn primary-action" type="submit">
+                Translate
+              </button>
+            </form>
+            {translationStatus && (
+              <p className="status-text compact-status" role="status" aria-live="polite">
+                {translationStatus}
+              </p>
+            )}
+            {translation && (
+              <article className="translation-result">
+                <span>{translation.source === "phrasebook" ? "Matched phrasebook" : "API translation"}</span>
+                <strong lang={LANGUAGE_LOCALES[translation.detected.language] || "en"}>{translation.translatedText}</strong>
+                {translation.pronunciation && <p>Pronunciation: {translation.pronunciation}</p>}
+              </article>
+            )}
+          </section>
 
+          <section className="phrase-toolbar categories-only" aria-label="Phrase filters">
             <div className="category-tabs" role="tablist" aria-label="Phrase categories">
               {categories.map((category) => {
                 const meta = CATEGORY_META[category] || { icon: "All", tone: "all" };
@@ -317,11 +328,6 @@ function LocalLanguageHelper() {
                 </article>
               ))}
             </div>
-            {visiblePhrases.length === 0 && (
-              <p className="empty-state" role="status">
-                No phrases match your search.
-              </p>
-            )}
           </section>
 
           <section className="language-side-lists" aria-label="Saved and recently viewed phrases">

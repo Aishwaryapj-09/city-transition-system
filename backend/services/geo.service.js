@@ -68,7 +68,8 @@ async function geocodePlace(location) {
       q: location,
       format: "json",
       addressdetails: 1,
-      limit: 1
+      limit: 1,
+      countrycodes: "in"
     },
     headers: {
       "User-Agent": USER_AGENT
@@ -87,7 +88,8 @@ async function geocodePlace(location) {
   return {
     lat,
     lng,
-    displayName: response.data[0].display_name || location
+    displayName: response.data[0].display_name || location,
+    address: response.data[0].address || {}
   };
 }
 
@@ -114,6 +116,7 @@ async function resolveLocation(input) {
 
 module.exports = {
   createHttpError,
+  geocodePlace,
   parseCoordinatePair,
   resolveLocation,
   reverseGeocode,

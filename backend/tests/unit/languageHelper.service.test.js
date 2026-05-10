@@ -1,51 +1,159 @@
+const axios = require("axios");
 const languageHelperService = require("../../services/languageHelper.service");
 
+jest.mock("axios");
+
 describe("Local Language Helper Service", () => {
-  it("maps Whitefield to Bangalore Kannada phrases", () => {
-    const result = languageHelperService.resolveLanguageHelper("Whitefield");
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("maps Whitefield to Bangalore Kannada phrases", async () => {
+    const result = await languageHelperService.resolveLanguageHelper("Whitefield");
 
     expect(result.detected).toMatchObject({
       locality: "Whitefield",
       city: "Bangalore",
       state: "Karnataka",
-      language: "Kannada"
+      language: "Kannada",
+      source: "predefined"
     });
     expect(result.phrases).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           category: "Emergency",
-          englishPhrase: "Call the police",
-          localPhrase: "ಪೊಲೀಸರನ್ನು ಕರೆ ಮಾಡಿ"
+          englishPhrase: "Call the police"
+        }),
+        expect.objectContaining({
+          category: "Basic Conversation",
+          englishPhrase: "Please speak slowly"
         })
       ])
     );
   });
 
-  it("maps Tambaram to Chennai Tamil phrases", () => {
-    const result = languageHelperService.resolveLanguageHelper("Tambaram");
+  it("maps Tambaram to Chennai Tamil phrases", async () => {
+    const result = await languageHelperService.resolveLanguageHelper("Tambaram");
 
     expect(result.detected).toMatchObject({
       city: "Chennai",
       state: "Tamil Nadu",
       language: "Tamil"
     });
-    expect(result.phrases.some((phrase) => phrase.localPhrase === "நன்றி")).toBe(true);
+    expect(result.phrases.some((phrase) => phrase.englishPhrase === "Thank you")).toBe(true);
   });
 
-  it("maps Gachibowli to Hyderabad Telugu phrases", () => {
-    const result = languageHelperService.resolveLanguageHelper("Gachibowli");
+  it("maps Gachibowli to Hyderabad Telugu phrases", async () => {
+    const result = await languageHelperService.resolveLanguageHelper("Gachibowli");
 
     expect(result.detected).toMatchObject({
       city: "Hyderabad",
       state: "Telangana",
       language: "Telugu"
     });
-    expect(result.phrases.some((phrase) => phrase.localPhrase === "ధన్యవాదాలు")).toBe(true);
+    expect(result.phrases.some((phrase) => phrase.englishPhrase === "Thank you")).toBe(true);
   });
 
-  it("rejects unknown places with a useful error", () => {
-    expect(() => languageHelperService.resolveLanguageHelper("Unknown Atlantis")).toThrow(
-      "No city or language mapping found"
+  it("uses OpenStreetMap geocoding for non-hardcoded places", async () => {
+    axios.get.mockResolvedValue({
+      data: [
+        {
+          lat: "12.2958",
+          lon: "76.6394",
+          display_name: "Dharwad, Karnataka, India",
+          address: {
+            city: "Dharwad",
+            state: "Karnataka",
+            country: "India"
+          }
+        }
+      ]
+    });
+
+    const result = await languageHelperService.resolveLanguageHelper("Some New Area Dharwad");
+
+    expect(axios.get).toHaveBeenCalledWith(
+      "https://nominatim.openstreetmap.org/search",
+      expect.objectContaining({
+        params: expect.objectContaining({
+          q: "Some New Area Dharwad",
+          addressdetails: 1
+        })
+      })
     );
+    expect(result.detected).toMatchObject({
+      city: "Dharwad",
+      state: "Karnataka",
+      language: "Kannada",
+      source: "openstreetmap"
+    });
+  });
+
+  it("rejects geocoded places when state language is unsupported", async () => {
+    axios.get.mockResolvedValue({
+      data: [
+        {
+          lat: "1",
+          lon: "1",
+          display_name: "Unknown",
+          address: {
+            city: "Unknown",
+            state: "Unsupported State"
+          }
+        }
+      ]
+    });
+
+    await expect(languageHelperService.resolveLanguageHelper("Unknown Atlantis")).rejects.toThrow(
+      "No local language mapping found"
+    );
+  });
+
+  it("translates exact common phrases from the curated phrasebook", async () => {
+    const result = await languageHelperService.translateEnglishText({
+      place: "Whitefield",
+      text: "Thank you"
+    });
+
+    expect(result).toMatchObject({
+      input: "Thank you",
+      detected: {
+        language: "Kannada"
+      },
+      source: "phrasebook",
+      pronunciation: "Dhanyavaadagalu"
+    });
+    expect(result.translatedText).toBe("ಧನ್ಯವಾದಗಳು");
+  });
+
+  it("uses the translation API for custom English sentences", async () => {
+    axios.get
+      .mockRejectedValueOnce(new Error("Nominatim unavailable"))
+      .mockResolvedValueOnce({
+        data: {
+          responseData: {
+            translatedText: "ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು"
+          }
+        }
+      });
+
+    const result = await languageHelperService.translateEnglishText({
+      place: "Whitefield",
+      text: "I need a rented room"
+    });
+
+    expect(axios.get).toHaveBeenLastCalledWith(
+      "https://api.mymemory.translated.net/get",
+      expect.objectContaining({
+        params: {
+          q: "I need a rented room",
+          langpair: "en|kn"
+        }
+      })
+    );
+    expect(result).toMatchObject({
+      translatedText: "ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು",
+      source: "mymemory-api"
+    });
   });
 });

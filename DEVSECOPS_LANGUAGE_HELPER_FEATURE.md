@@ -5,6 +5,7 @@
 - Frontend page: `frontend/src/pages/LocalLanguageHelper.jsx`
 - Visitor route: `/local-language-helper`
 - Backend route: `GET /api/language-helper?place=Whitefield`
+- Translation route: `POST /api/language-helper/translate`
 - Backend files:
   - `backend/routes/language-helper.routes.js`
   - `backend/controllers/languageHelper.controller.js`
@@ -21,7 +22,7 @@ cd backend
 npm run test:language-helper:unit
 ```
 
-This verifies locality-to-city detection, state/language mapping, phrase loading, and unknown-place errors.
+This verifies OpenStreetMap/Nominatim place detection, predefined locality fallback detection, state/language mapping, phrase loading, and unknown-place errors.
 
 ## Integration Testing
 
@@ -34,6 +35,23 @@ npm run test:language-helper:integration
 ```
 
 This verifies the `/api/language-helper` endpoint returns detected city, state, language, categories, and phrase cards.
+
+## Location and Language Detection Approach
+
+This feature does not use AI for detection.
+
+1. The frontend sends the entered place to `GET /api/language-helper?place=<place>`.
+2. The backend calls OpenStreetMap Nominatim geocoding through `geo.service.js`.
+3. Nominatim returns structured address details such as city, town, suburb, road, and state.
+4. The backend maps the detected state to its primary local language using `STATE_LANGUAGE_MAPPINGS`.
+5. If Nominatim is unavailable during local testing, a small predefined locality list handles common demo areas such as Whitefield, Electronic City, Tambaram, and Gachibowli.
+6. The phrase cards are loaded from the app's curated phrase dataset for that language.
+7. If the user enters their own English sentence, the backend first checks the curated phrasebook for an exact phrase match.
+8. If it is not a known phrase, the backend sends the English text to a translation API for the detected language.
+
+The app is built as a city transition helper: a newcomer can enter an area or landmark, see the state and local language, use ready survival phrases, and translate their own English sentence into the detected local language.
+
+The place detection does not use AI. Location detection comes from OpenStreetMap/Nominatim, while language mapping and ready phrase cards are curated in the project so first-time movers get predictable emergency, transport, shopping, and basic conversation phrases. Custom sentence translation uses a translation API; by default the code calls MyMemory, and it can be pointed to LibreTranslate or another compatible service with `TRANSLATION_API_URL` and `TRANSLATION_API_KEY`.
 
 ## Code Coverage Testing
 
