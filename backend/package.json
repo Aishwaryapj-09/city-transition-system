@@ -11,7 +11,10 @@
     "test:integration": "jest tests/integration",
     "test:nearby:unit": "jest tests/unit/nearby.service.test.js",
     "test:nearby:integration": "jest tests/integration/nearby.test.js",
+    "test:language-helper:unit": "jest tests/unit/languageHelper.service.test.js",
+    "test:language-helper:integration": "jest tests/integration/languageHelper.test.js",
     "coverage:nearby": "jest tests/unit/nearby.service.test.js tests/integration/nearby.test.js --coverage",
+    "coverage:language-helper": "jest tests/unit/languageHelper.service.test.js tests/integration/languageHelper.test.js --coverage",
     "coverage": "jest --coverage",
     "lint": "eslint ."
   },

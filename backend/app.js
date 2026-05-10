@@ -9,6 +9,7 @@ const authRoutes = require("./routes/auth.routes");
 const listingRoutes = require("./routes/listing.routes");
 const accommodationRoutes = require("./routes/accommodation.routes");
 const nearbyRoutes = require("./routes/nearby.routes");
+const languageHelperRoutes = require("./routes/language-helper.routes");
 
 const errorMiddleware = require("./middleware/errorMiddleware");
 
@@ -56,6 +57,9 @@ app.use("/api/listings", listingRoutes);
 
 // Nearby essentials finder
 app.use("/api/nearby", nearbyRoutes);
+
+// Local language helper
+app.use("/api/language-helper", languageHelperRoutes);
 
 // ---------------- HEALTH CHECK ----------------
 

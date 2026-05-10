@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Accommodation from "./pages/Accommodation";
 import NearbyEssentials from "./pages/NearbyEssentials";
+import LocalLanguageHelper from "./pages/LocalLanguageHelper";
 import Listings from "./pages/Listings";
 import AddListing from "./pages/AddListing";
 import MyListings from "./pages/MyListings";
@@ -117,6 +118,15 @@ function App() {
           element={
             <ProtectedRoute>
               <NearbyEssentials />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/local-language-helper"
+          element={
+            <ProtectedRoute>
+              <LocalLanguageHelper />
             </ProtectedRoute>
           }
         />

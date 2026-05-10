@@ -38,8 +38,12 @@ function Dashboard() {
                 Nearby Essentials
               </button>
 
+              <button className="feature-btn" onClick={() => navigate("/local-language-helper")}>
+                Local Language Helper
+              </button>
+
               <p style={{ marginTop: "10px" }}>
-                Search accommodation and nearby essentials around your selected city area.
+                Search accommodation, nearby essentials, and local language phrases around your selected city area.
               </p>
             </>
 

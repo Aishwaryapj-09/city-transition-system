@@ -60,6 +60,22 @@ pipeline {
             }
         }
 
+        stage('Language Helper Unit Test') {
+            steps {
+                dir('backend') {
+                    bat 'npm run test:language-helper:unit'
+                }
+            }
+        }
+
+        stage('Language Helper Integration Test') {
+            steps {
+                dir('backend') {
+                    bat 'npm run test:language-helper:integration'
+                }
+            }
+        }
+
         stage('Unit Tests + Code Coverage') {
             steps {
                 dir('backend') {
@@ -149,7 +165,7 @@ pipeline {
         stage('Info') {
             steps {
                 echo "FULL DEVSECOPS PIPELINE ENABLED"
-                echo "Nearby Essentials Finder is covered by unit, integration, coverage, lint, SonarQube, Docker, and Kubernetes stages"
+                echo "Nearby Essentials Finder and Local Language Helper are covered by unit, integration, coverage, lint, SonarQube, Docker, and Kubernetes stages"
             }
         }
     }

@@ -144,15 +144,41 @@ function toNearbyPlace(element, type, origin) {
   };
 }
 
+function buildPlaceKey(place) {
+  const normalizedName = String(place.name || "").trim().toLowerCase();
+  const normalizedAddress = String(place.address || "").trim().toLowerCase();
+  const latBucket = Number(place.lat).toFixed(5);
+  const lngBucket = Number(place.lng).toFixed(5);
+
+  return `${normalizedName}|${normalizedAddress}|${latBucket}|${lngBucket}`;
+}
+
+function dedupePlaces(places) {
+  const seen = new Set();
+
+  return places.filter((place) => {
+    const key = buildPlaceKey(place);
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
 async function findNearbyEssentials(input) {
   const options = await validateNearbyInput(input);
   const query = buildNearbyQuery(options);
 
   const response = await fetchOverpass(query, 20000);
 
-  const places = (response.elements || [])
+  const mappedPlaces = (response.elements || [])
     .map((element) => toNearbyPlace(element, options.type, options))
-    .filter(Boolean)
+    .filter(Boolean);
+
+  const places = dedupePlaces(mappedPlaces)
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 20);
 
@@ -166,6 +192,7 @@ async function findNearbyEssentials(input) {
 module.exports = {
   ESSENTIAL_TYPES,
   buildNearbyQuery,
+  dedupePlaces,
   findNearbyEssentials,
   validateNearbyInput
 };

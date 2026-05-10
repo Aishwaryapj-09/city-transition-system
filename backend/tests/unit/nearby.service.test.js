@@ -97,4 +97,45 @@ describe("Nearby Essentials Service Unit Tests", () => {
       source: "openstreetmap"
     });
   });
+
+  it("should render duplicate nearby places only once", async () => {
+    axios.post.mockResolvedValue({
+      data: {
+        elements: [
+          {
+            type: "node",
+            id: 101,
+            lat: 12.97,
+            lon: 77.59,
+            tags: {
+              name: "City Care Hospital",
+              "addr:street": "MG Road"
+            }
+          },
+          {
+            type: "way",
+            id: 202,
+            center: {
+              lat: 12.970001,
+              lon: 77.590001
+            },
+            tags: {
+              name: "City Care Hospital",
+              "addr:street": "MG Road"
+            }
+          }
+        ]
+      }
+    });
+
+    const result = await nearbyService.findNearbyEssentials({
+      lat: "12.9716",
+      lng: "77.5946",
+      type: "hospital",
+      radius: "3000"
+    });
+
+    expect(result.count).toBe(1);
+    expect(result.places[0].name).toBe("City Care Hospital");
+  });
 });
