@@ -23,7 +23,7 @@ function getAccommodationCategory(tags = {}) {
 }
 
 function hashText(value) {
-  return String(value || "").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+  return Array.from(String(value || "")).reduce((total, char) => total + char.codePointAt(0), 0);
 }
 
 function createDisplayRating(seed) {

@@ -12,7 +12,7 @@ function createHttpError(message, statusCode = 400) {
 
 function parseCoordinatePair(value) {
   const text = String(value || "").trim();
-  const match = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  const match = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(text);
 
   if (!match) {
     return null;

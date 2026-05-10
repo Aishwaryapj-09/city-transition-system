@@ -17,7 +17,7 @@ const MYMEMORY_TRANSLATE_URL = "https://api.mymemory.translated.net/get";
 const normalize = (value = "") => (
   String(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
+    .replaceAll(/[^a-z0-9]+/g, " ")
     .trim()
 );
 
@@ -66,28 +66,36 @@ const findLocationMatch = (place) => {
   return bestMatch && bestMatch.score >= 40 ? bestMatch : null;
 };
 
-const pickCityFromAddress = (address = {}, fallbackCity) => (
-  address.city ||
-  address.town ||
-  address.municipality ||
-  address.village ||
-  address.city_district ||
-  address.state_district ||
-  fallbackCity
-);
+const pickCityFromAddress = (address, fallbackCity) => {
+  const locationAddress = address || {};
 
-const pickLocalityFromAddress = (address = {}, fallbackLocality) => (
-  address.suburb ||
-  address.neighbourhood ||
-  address.quarter ||
-  address.residential ||
-  address.road ||
-  address.hamlet ||
-  address.city ||
-  address.town ||
-  address.village ||
-  fallbackLocality
-);
+  return (
+    locationAddress.city ||
+    locationAddress.town ||
+    locationAddress.municipality ||
+    locationAddress.village ||
+    locationAddress.city_district ||
+    locationAddress.state_district ||
+    fallbackCity
+  );
+};
+
+const pickLocalityFromAddress = (address, fallbackLocality) => {
+  const locationAddress = address || {};
+
+  return (
+    locationAddress.suburb ||
+    locationAddress.neighbourhood ||
+    locationAddress.quarter ||
+    locationAddress.residential ||
+    locationAddress.road ||
+    locationAddress.hamlet ||
+    locationAddress.city ||
+    locationAddress.town ||
+    locationAddress.village ||
+    fallbackLocality
+  );
+};
 
 const getStateConfig = (state) => {
   const normalizedState = normalize(state);
@@ -146,7 +154,7 @@ const resolveLocationFromAddress = ({
 
 const buildPhraseId = (language, phrase) => (
   `${normalize(language)}-${normalize(phrase.category)}-${normalize(phrase.englishPhrase)}`
-    .replace(/\s+/g, "-")
+    .replaceAll(/\s+/g, "-")
 );
 
 const getPhrasesForLanguage = (language) => {
