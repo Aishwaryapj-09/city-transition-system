@@ -224,11 +224,19 @@ const resolveLanguageHelper = async (place) => {
   }
 
   let location;
+  const predefinedLocation = findLocationMatch(place);
 
   try {
     location = await resolveLocationByGeocoding(place);
+
+    if (predefinedLocation) {
+      location = {
+        ...predefinedLocation,
+        source: location.source
+      };
+    }
   } catch (error) {
-    location = findLocationMatch(place);
+    location = predefinedLocation;
 
     if (!location) {
       throw error;

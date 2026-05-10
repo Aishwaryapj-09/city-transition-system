@@ -1,8 +1,30 @@
 const request = require("supertest");
+const axios = require("axios");
 const app = require("../../app");
 
+jest.mock("axios");
+
 describe("Local Language Helper API", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("detects a locality and returns phrase categories", async () => {
+    axios.get.mockResolvedValue({
+      data: [
+        {
+          lat: "12.8452",
+          lon: "77.6602",
+          display_name: "Electronic City, Karnataka, India",
+          address: {
+            city: "Electronic City",
+            state: "Karnataka",
+            country: "India"
+          }
+        }
+      ]
+    });
+
     const res = await request(app)
       .get("/api/language-helper?place=Electronic%20City");
 
