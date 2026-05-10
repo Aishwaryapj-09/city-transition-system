@@ -24,7 +24,8 @@ const helperResponse = {
       category: "Basic Conversation",
       englishPhrase: "Thank you",
       localPhrase: "ಧನ್ಯವಾದಗಳು",
-      pronunciation: "Dhanyavaadagalu"
+      pronunciation: "Dhanyavaadagalu",
+      romanizedText: "Dhanyavaadagalu"
     }
   ],
   count: 1
@@ -59,6 +60,7 @@ test("renders accessible controls and loaded phrase actions", async () => {
   });
   expect(screen.getByText("Kannada")).toBeInTheDocument();
   expect(screen.getByText("kn")).toBeInTheDocument();
+  expect(screen.getByText("English letters: Dhanyavaadagalu")).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: /basic conversation/i })).toHaveAttribute("aria-selected", "false");
 
   const saveButton = screen.getByRole("button", { name: /save phrase: thank you/i });
@@ -120,6 +122,16 @@ test("detects language using current location coordinates", async () => {
   expect(screen.getByText("kn")).toBeInTheDocument();
 });
 
+test("keeps use my location available after typing a place", () => {
+  render(<LocalLanguageHelper />);
+
+  fireEvent.change(screen.getByLabelText(/enter place/i), {
+    target: { value: "Whitefield" }
+  });
+
+  expect(screen.getByRole("button", { name: /use my location/i })).toBeEnabled();
+});
+
 test("translates custom English text using the detected place", async () => {
   API.get.mockResolvedValue({ data: helperResponse });
   API.post.mockResolvedValue({
@@ -155,5 +167,39 @@ test("translates custom English text using the detected place", async () => {
 
   await waitFor(() => {
     expect(screen.getByText("ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು")).toBeInTheDocument();
+  });
+});
+
+test("shows English letters below phrasebook translation", async () => {
+  API.get.mockResolvedValue({ data: helperResponse });
+  API.post.mockResolvedValue({
+    data: {
+      input: "Thank you",
+      translatedText: "à²§à²¨à³à²¯à²µà²¾à²¦à²—à²³à³",
+      pronunciation: "Dhanyavaadagalu",
+      romanizedText: "Dhanyavaadagalu",
+      detected: helperResponse.detected,
+      source: "phrasebook"
+    }
+  });
+
+  render(<LocalLanguageHelper />);
+
+  fireEvent.change(screen.getByLabelText(/enter place/i), {
+    target: { value: "Whitefield" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /find state & language/i }));
+
+  await waitFor(() => {
+    expect(screen.getByText("Translate Your Sentence")).toBeInTheDocument();
+  });
+
+  fireEvent.change(screen.getByRole("textbox", { name: "English sentence" }), {
+    target: { value: "Thank you" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /^translate$/i }));
+
+  await waitFor(() => {
+    expect(screen.getAllByText("English letters: Dhanyavaadagalu").length).toBeGreaterThan(0);
   });
 });

@@ -27,7 +27,8 @@ describe("Local Language Helper Service", () => {
         }),
         expect.objectContaining({
           category: "Basic Conversation",
-          englishPhrase: "Please speak slowly"
+          englishPhrase: "Please speak slowly",
+          romanizedText: "Dayavittu nidhaanavaagi maataadi"
         })
       ])
     );
@@ -165,7 +166,8 @@ describe("Local Language Helper Service", () => {
         language: "Kannada"
       },
       source: "phrasebook",
-      pronunciation: "Dhanyavaadagalu"
+      pronunciation: "Dhanyavaadagalu",
+      romanizedText: "Dhanyavaadagalu"
     });
     expect(result.translatedText).toBe("ಧನ್ಯವಾದಗಳು");
   });

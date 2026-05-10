@@ -37,6 +37,8 @@ const writeStorage = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
+const getEnglishLetters = (item) => item?.romanizedText || item?.pronunciation || "";
+
 function LocalLanguageHelper() {
   const [place, setPlace] = useState("");
   const [coordinates, setCoordinates] = useState(null);
@@ -232,7 +234,7 @@ function LocalLanguageHelper() {
           />
         </div>
         <div className="action-row">
-          <button className="loc-btn" type="button" onClick={useCurrentLocation} disabled={Boolean(place.trim())}>
+          <button className="loc-btn" type="button" onClick={useCurrentLocation}>
             Use My Location
           </button>
           {coordinates && (
@@ -307,7 +309,9 @@ function LocalLanguageHelper() {
               <article className="translation-result">
                 <span>{translation.source === "phrasebook" ? "Matched phrasebook" : "API translation"}</span>
                 <strong lang={translation.detected.languageCode || LANGUAGE_LOCALES[translation.detected.language] || "en"}>{translation.translatedText}</strong>
-                {translation.pronunciation && <p>Pronunciation: {translation.pronunciation}</p>}
+                {getEnglishLetters(translation) && (
+                  <p className="english-letters">English letters: {getEnglishLetters(translation)}</p>
+                )}
               </article>
             )}
           </section>
@@ -369,7 +373,7 @@ function LocalLanguageHelper() {
                   </div>
                   <p className="english-phrase" id={`${phrase.id}-english`}>{phrase.englishPhrase}</p>
                   <p className="local-phrase" lang={helperData.detected.languageCode || LANGUAGE_LOCALES[helperData.detected.language] || "en"}>{phrase.localPhrase}</p>
-                  <p className="pronunciation">Pronunciation: {phrase.pronunciation}</p>
+                  <p className="pronunciation">English letters: {getEnglishLetters(phrase)}</p>
                   <div className="phrase-actions">
                     <button
                       type="button"

@@ -165,6 +165,7 @@ const getPhrasesForLanguage = (language) => {
     id: buildPhraseId(language, phrase),
     language,
     languageCode,
+    romanizedText: phrase.pronunciation,
     ...phrase
   }));
 };
@@ -220,6 +221,7 @@ const translateEnglishText = async ({ place, text }) => {
       input: englishText,
       translatedText: phrasebookMatch.localPhrase,
       pronunciation: phrasebookMatch.pronunciation,
+      romanizedText: phrasebookMatch.pronunciation,
       detected: helper.detected,
       source: "phrasebook"
     };
@@ -246,6 +248,7 @@ const translateEnglishText = async ({ place, text }) => {
       input: englishText,
       translatedText,
       pronunciation: "",
+      romanizedText: "",
       detected: helper.detected,
       source: process.env.TRANSLATION_API_URL ? "translation-api" : "mymemory-api"
     };

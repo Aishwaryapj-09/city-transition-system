@@ -826,6 +826,12 @@
   margin:8px 0 0;
 }
 
+.english-letters{
+  color:#f4fbff;
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+
 .phrase-toolbar{
   display:grid;
   grid-template-columns:minmax(250px, 360px) 1fr;
@@ -952,7 +958,8 @@
 
 .pronunciation{
   margin:0;
-  color:#c9d8e0;
+  color:#f4fbff;
+  font-weight:800;
   line-height:1.45;
 }
 
