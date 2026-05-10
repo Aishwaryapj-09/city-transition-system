@@ -57,7 +57,7 @@ const AccommodationCard = ({ place, userLat, userLon }) => {
   const aboutText = `${title} is a ${String(place.category || "stay").toLowerCase()} option near the selected location. It is about ${distance !== null ? `${distance.toFixed(2)} km` : "a short distance"} away, has an estimated rating of ${ratingText} out of 5, and is listed around ${priceText.toLowerCase()}.`;
 
   return (
-    <div className="acc-card result-card">
+    <div className="acc-card result-card accommodation-card">
       <div className="card-body">
         <div className="card-topline">
           <span className="result-pill">{place.category || "Stay"}</span>

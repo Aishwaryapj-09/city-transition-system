@@ -10,6 +10,7 @@ import Listings from "./pages/Listings";
 import AddListing from "./pages/AddListing";
 import MyListings from "./pages/MyListings";
 import VerifyListings from "./pages/VerifyListings";
+import "./App.css";
 
 
 /* ---------------- PROTECTED ROUTE ---------------- */

@@ -108,16 +108,47 @@ function NearbyEssentials() {
       <p>Find hospitals, schools, banks, supermarkets and bus stops near a place.</p>
 
       <div className="finder-panel essentials-search">
-        <div className="field-block">
-          <label htmlFor="essentials-place">Enter place name</label>
-          <input
-            id="essentials-place"
-            aria-label="Area name"
-            placeholder="Enter place name"
-            value={area}
-            onChange={useAreaSearch}
-            disabled={Boolean(coordinates)}
-          />
+        <div className="finder-grid">
+          <div className="field-block location-field">
+            <label htmlFor="essentials-place">Enter place name</label>
+            <input
+              id="essentials-place"
+              aria-label="Area name"
+              placeholder="Enter place name"
+              value={area}
+              onChange={useAreaSearch}
+              disabled={Boolean(coordinates)}
+            />
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="essential-type">Essential</label>
+            <select id="essential-type" value={type} onChange={(event) => setType(event.target.value)}>
+              {ESSENTIAL_TYPES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="essential-radius">Search radius</label>
+            <select id="essential-radius" value={radius} onChange={(event) => setRadius(event.target.value)}>
+              <option value="1000">1 km</option>
+              <option value="3000">3 km</option>
+              <option value="5000">5 km</option>
+              <option value="10000">10 km</option>
+            </select>
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="essential-sort">Sort by</label>
+            <select id="essential-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <option value="distance">Nearest first</option>
+              <option value="name">Name A-Z</option>
+            </select>
+          </div>
         </div>
 
         <div className="action-row">
@@ -148,48 +179,22 @@ function NearbyEssentials() {
         </div>
       )}
 
-      <div className="filter-panel">
-        <div className="field-block">
-          <label htmlFor="essential-type">Essential</label>
-          <select id="essential-type" value={type} onChange={(event) => setType(event.target.value)}>
-            {ESSENTIAL_TYPES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field-block">
-          <label htmlFor="essential-radius">Search radius</label>
-          <select id="essential-radius" value={radius} onChange={(event) => setRadius(event.target.value)}>
-            <option value="1000">1 km</option>
-            <option value="3000">3 km</option>
-            <option value="5000">5 km</option>
-            <option value="10000">10 km</option>
-          </select>
-        </div>
-
-        <div className="field-block">
-          <label htmlFor="essential-sort">Sort by</label>
-          <select id="essential-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-            <option value="distance">Nearest first</option>
-            <option value="name">Name A-Z</option>
-          </select>
-        </div>
-
-        <button className="filter-action" onClick={searchEssentials}>
-          Apply Filter
-        </button>
-      </div>
-
       {status && <p className="status-text">{status}</p>}
 
-      <div className="acc-grid">
-        {places.map((place) => (
-          <NearbyEssentialCard place={place} key={place.id} />
-        ))}
-      </div>
+      {places.length > 0 && (
+        <section className="essentials-results" aria-label="Nearby essentials results">
+          <div className="results-heading">
+            <h2>Nearby {ESSENTIAL_TYPES.find((item) => item.value === type)?.label || "Essentials"}</h2>
+            <span>{places.length} results</span>
+          </div>
+
+          <div className="essentials-card-grid">
+            {places.map((place) => (
+              <NearbyEssentialCard place={place} key={place.id} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

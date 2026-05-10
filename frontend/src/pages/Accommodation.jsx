@@ -133,8 +133,31 @@ function Accommodation() {
     setApartments(applyFilters(allApartments));
   };
 
+  const totalResults = hotels.length + hostels.length + apartments.length;
+
+  const renderAccommodationSection = (title, items) => {
+    if (items.length === 0) {
+      return null;
+    }
+
+    return (
+      <section className="accommodation-section" aria-label={title}>
+        <div className="results-heading">
+          <h2>{title}</h2>
+          <span>{items.length} results</span>
+        </div>
+
+        <div className="accommodation-card-grid">
+          {items.map((place) => (
+            <AccommodationCard key={place.id || place.title || place.name} place={place} userLat={userLat} userLon={userLon} />
+          ))}
+        </div>
+      </section>
+    );
+  };
+
   return (
-    <div className="acc-container">
+    <div className="acc-container accommodation-page">
       <h1>Accommodation Finder</h1>
       <p>Find stays around a place or your current location.</p>
 
@@ -213,26 +236,18 @@ function Accommodation() {
 
       {status && <p className="status-text">{status}</p>}
 
-      <h2 className="section-title">Hotels Nearby</h2>
-      <div className="acc-grid">
-        {hotels.map((place) => (
-          <AccommodationCard key={place.id || place.title} place={place} userLat={userLat} userLon={userLon} />
-        ))}
-      </div>
+      {totalResults > 0 && (
+        <section className="accommodation-results" aria-label="Accommodation results">
+          <div className="results-summary">
+            <strong>{totalResults}</strong>
+            <span>matching stays found near your selected place</span>
+          </div>
 
-      <h2 className="section-title">Hostels / Guest Houses</h2>
-      <div className="acc-grid">
-        {hostels.map((place) => (
-          <AccommodationCard key={place.id || place.title} place={place} userLat={userLat} userLon={userLon} />
-        ))}
-      </div>
-
-      <h2 className="section-title">Apartments / PG</h2>
-      <div className="acc-grid">
-        {apartments.map((place) => (
-          <AccommodationCard key={place.id || place.title} place={place} userLat={userLat} userLon={userLon} />
-        ))}
-      </div>
+          {renderAccommodationSection("Hotels Nearby", hotels)}
+          {renderAccommodationSection("Hostels / Guest Houses", hostels)}
+          {renderAccommodationSection("Apartments / PG", apartments)}
+        </section>
+      )}
     </div>
   );
 }
