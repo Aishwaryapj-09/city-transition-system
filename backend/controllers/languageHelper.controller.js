@@ -2,7 +2,11 @@ const languageHelperService = require("../services/languageHelper.service");
 
 exports.getLanguageHelper = async (req, res) => {
   try {
-    const result = await languageHelperService.resolveLanguageHelper(req.query.place);
+    const result = await languageHelperService.resolveLanguageHelper({
+      place: req.query.place,
+      lat: req.query.lat,
+      lng: req.query.lng
+    });
 
     return res.status(200).json(result);
   } catch (error) {

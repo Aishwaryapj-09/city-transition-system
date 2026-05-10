@@ -13,7 +13,8 @@ const helperResponse = {
     locality: "Whitefield",
     city: "Bangalore",
     state: "Karnataka",
-    language: "Kannada"
+    language: "Kannada",
+    languageCode: "kn"
   },
   categories: ["Basic Conversation", "Transport", "Emergency", "Food & Shopping"],
   phrases: [
@@ -33,6 +34,10 @@ beforeEach(() => {
   localStorage.clear();
   API.get.mockReset();
   API.post.mockReset();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: undefined
+  });
 });
 
 test("renders accessible controls and loaded phrase actions", async () => {
@@ -53,6 +58,7 @@ test("renders accessible controls and loaded phrase actions", async () => {
     expect(screen.getByRole("status")).toHaveTextContent("Bangalore detected");
   });
   expect(screen.getByText("Kannada")).toBeInTheDocument();
+  expect(screen.getByText("kn")).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: /basic conversation/i })).toHaveAttribute("aria-selected", "false");
 
   const saveButton = screen.getByRole("button", { name: /save phrase: thank you/i });
@@ -63,6 +69,55 @@ test("renders accessible controls and loaded phrase actions", async () => {
   await waitFor(() => {
     expect(screen.getByRole("button", { name: /remove saved phrase: thank you/i })).toHaveAttribute("aria-pressed", "true");
   });
+});
+
+test("detects language using current location coordinates", async () => {
+  API.get.mockResolvedValue({
+    data: {
+      ...helperResponse,
+      input: "12.971599,77.594566",
+      detected: {
+        locality: "MG Road",
+        city: "Bengaluru",
+        state: "Karnataka",
+        language: "Kannada",
+        languageCode: "kn",
+        source: "current-location",
+        coordinates: {
+          lat: 12.971599,
+          lng: 77.594566
+        }
+      }
+    }
+  });
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: jest.fn((success) => success({
+        coords: {
+          latitude: 12.971599,
+          longitude: 77.594566
+        }
+      }))
+    }
+  });
+
+  render(<LocalLanguageHelper />);
+
+  fireEvent.click(screen.getByRole("button", { name: /use my location/i }));
+
+  await waitFor(() => {
+    expect(API.get).toHaveBeenCalledWith("/language-helper", {
+      params: {
+        lat: "12.971599",
+        lng: "77.594566"
+      }
+    });
+  });
+  await waitFor(() => {
+    expect(screen.getByText("Bengaluru")).toBeInTheDocument();
+  });
+  expect(screen.getByText("kn")).toBeInTheDocument();
 });
 
 test("translates custom English text using the detected place", async () => {

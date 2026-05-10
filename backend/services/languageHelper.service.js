@@ -6,7 +6,11 @@ const {
   TRANSLATION_LANGUAGE_CODES
 } = require("../data/languageHelper.data");
 const axios = require("axios");
-const { geocodePlace } = require("./geo.service");
+const {
+  geocodePlace,
+  parseCoordinatePair,
+  reverseGeocodeCoordinates
+} = require("./geo.service");
 
 const MYMEMORY_TRANSLATE_URL = "https://api.mymemory.translated.net/get";
 
@@ -95,7 +99,32 @@ const getStateConfig = (state) => {
 
 const resolveLocationByGeocoding = async (place) => {
   const result = await geocodePlace(place);
-  const address = result.address || {};
+  return resolveLocationFromAddress({
+    address: result.address || {},
+    fallbackLocality: place,
+    source: "openstreetmap"
+  });
+};
+
+const resolveLocationByCoordinates = async ({ lat, lng }) => {
+  const result = await reverseGeocodeCoordinates(lat, lng);
+  return resolveLocationFromAddress({
+    address: result.address || {},
+    fallbackLocality: result.displayName,
+    source: "current-location",
+    coordinates: {
+      lat: result.lat,
+      lng: result.lng
+    }
+  });
+};
+
+const resolveLocationFromAddress = ({
+  address = {},
+  fallbackLocality,
+  source,
+  coordinates
+}) => {
   const state = address.state;
   const stateConfig = getStateConfig(state);
 
@@ -106,11 +135,12 @@ const resolveLocationByGeocoding = async (place) => {
   }
 
   return {
-    matchedLocality: pickLocalityFromAddress(address, place),
+    matchedLocality: pickLocalityFromAddress(address, fallbackLocality),
     city: pickCityFromAddress(address, stateConfig.defaultCity),
     state,
     language: stateConfig.language,
-    source: "openstreetmap"
+    source,
+    coordinates
   };
 };
 
@@ -121,10 +151,12 @@ const buildPhraseId = (language, phrase) => (
 
 const getPhrasesForLanguage = (language) => {
   const phrases = PHRASES_BY_LANGUAGE[language] || [];
+  const languageCode = TRANSLATION_LANGUAGE_CODES[language] || "";
 
   return phrases.map((phrase) => ({
     id: buildPhraseId(language, phrase),
     language,
+    languageCode,
     ...phrase
   }));
 };
@@ -216,18 +248,55 @@ const translateEnglishText = async ({ place, text }) => {
   }
 };
 
-const resolveLanguageHelper = async (place) => {
-  if (!place || !String(place).trim()) {
+const parseLanguageHelperInput = (input) => {
+  if (input && typeof input === "object") {
+    const place = String(input.place || "").trim();
+    const lat = input.lat;
+    const lng = input.lng;
+
+    if (lat !== undefined || lng !== undefined) {
+      if (lat === undefined || lng === undefined) {
+        const error = new Error("lat and lng are required together");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      return {
+        place,
+        coordinates: { lat, lng },
+        input: `${lat},${lng}`
+      };
+    }
+
+    return { place, input: place };
+  }
+
+  const place = String(input || "").trim();
+  const coordinates = parseCoordinatePair(place);
+
+  return {
+    place,
+    coordinates,
+    input: place
+  };
+};
+
+const resolveLanguageHelper = async (input) => {
+  const locationInput = parseLanguageHelperInput(input);
+
+  if (!locationInput.place && !locationInput.coordinates) {
     const error = new Error("place is required");
     error.statusCode = 400;
     throw error;
   }
 
   let location;
-  const predefinedLocation = findLocationMatch(place);
+  const predefinedLocation = locationInput.place ? findLocationMatch(locationInput.place) : null;
 
   try {
-    location = await resolveLocationByGeocoding(place);
+    location = locationInput.coordinates
+      ? await resolveLocationByCoordinates(locationInput.coordinates)
+      : await resolveLocationByGeocoding(locationInput.place);
 
     if (predefinedLocation) {
       location = {
@@ -244,15 +313,18 @@ const resolveLanguageHelper = async (place) => {
   }
 
   const phrases = getPhrasesForLanguage(location.language);
+  const languageCode = TRANSLATION_LANGUAGE_CODES[location.language] || "";
 
   return {
-    input: String(place).trim(),
+    input: locationInput.input,
     detected: {
       locality: location.matchedLocality,
       city: location.city,
       state: location.state,
       language: location.language,
-      source: location.source || "predefined"
+      languageCode,
+      source: location.source || "predefined",
+      coordinates: location.coordinates
     },
     categories: CATEGORIES,
     phrases,

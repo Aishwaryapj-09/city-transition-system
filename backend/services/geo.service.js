@@ -62,6 +62,30 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
+async function reverseGeocodeCoordinates(lat, lng) {
+  validateCoordinates(Number(lat), Number(lng));
+
+  const response = await axios.get(NOMINATIM_REVERSE_URL, {
+    params: {
+      lat,
+      lon: lng,
+      format: "json",
+      addressdetails: 1
+    },
+    headers: {
+      "User-Agent": USER_AGENT
+    },
+    timeout: 10000
+  });
+
+  return {
+    lat: Number(lat),
+    lng: Number(lng),
+    displayName: response.data?.display_name || `${lat},${lng}`,
+    address: response.data?.address || {}
+  };
+}
+
 async function geocodePlace(location) {
   const response = await axios.get(NOMINATIM_SEARCH_URL, {
     params: {
@@ -120,5 +144,6 @@ module.exports = {
   parseCoordinatePair,
   resolveLocation,
   reverseGeocode,
+  reverseGeocodeCoordinates,
   validateCoordinates
 };

@@ -39,6 +39,7 @@ const writeStorage = (key, value) => {
 
 function LocalLanguageHelper() {
   const [place, setPlace] = useState("");
+  const [coordinates, setCoordinates] = useState(null);
   const [helperData, setHelperData] = useState(null);
   const [status, setStatus] = useState("");
   const [customText, setCustomText] = useState("");
@@ -69,13 +70,19 @@ function LocalLanguageHelper() {
     });
   }, [activeCategory, helperData]);
 
-  const loadLanguageHelper = async (event, selectedPlace = place) => {
+  const loadLanguageHelper = async (event, selectedPlace = place, selectedCoordinates = coordinates) => {
     event?.preventDefault();
 
     const trimmedPlace = selectedPlace.trim();
+    const params = selectedCoordinates
+      ? {
+          lat: selectedCoordinates.lat,
+          lng: selectedCoordinates.lng
+        }
+      : { place: trimmedPlace };
 
-    if (!trimmedPlace) {
-      setStatus("Enter a locality, area, or city name");
+    if (!trimmedPlace && !selectedCoordinates) {
+      setStatus("Enter a locality, area, or city name, or use your current location");
       return;
     }
 
@@ -83,18 +90,55 @@ function LocalLanguageHelper() {
       setStatus("Locating state and local language...");
 
       const response = await API.get("/language-helper", {
-        params: { place: trimmedPlace }
+        params
       });
 
       setHelperData(response.data);
       setActiveCategory("All");
       setTranslation(null);
       setTranslationStatus("");
-      setStatus(`${response.data.detected.city} detected. ${response.data.detected.language} phrases loaded.`);
+      setStatus(`${response.data.detected.city} detected. ${response.data.detected.language} (${response.data.detected.languageCode}) phrases loaded.`);
     } catch (error) {
       setHelperData(null);
       setStatus(error.response?.data?.message || error.message || "Unable to load local language helper");
     }
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setStatus("Current location is not available in this browser");
+      return;
+    }
+
+    setStatus("Getting your current location...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextCoordinates = {
+          lat: position.coords.latitude.toFixed(6),
+          lng: position.coords.longitude.toFixed(6)
+        };
+
+        setCoordinates(nextCoordinates);
+        setPlace("");
+        loadLanguageHelper(null, "", nextCoordinates);
+      },
+      () => {
+        setStatus("Location permission was blocked. Allow location access or enter a place name.");
+      }
+    );
+  };
+
+  const usePlaceSearch = (event) => {
+    setPlace(event.target.value);
+    setCoordinates(null);
+  };
+
+  const clearCurrentLocation = () => {
+    setCoordinates(null);
+    setHelperData(null);
+    setTranslation(null);
+    setStatus("");
   };
 
   const translateCustomText = async (event) => {
@@ -181,11 +225,25 @@ function LocalLanguageHelper() {
           <input
             id="language-place"
             value={place}
-            onChange={(event) => setPlace(event.target.value)}
+            onChange={usePlaceSearch}
             placeholder="Whitefield, Kochi, Ahmedabad, Panaji..."
             autoComplete="address-level2"
+            disabled={Boolean(coordinates)}
           />
         </div>
+        <div className="action-row">
+          <button className="loc-btn" type="button" onClick={useCurrentLocation} disabled={Boolean(place.trim())}>
+            Use My Location
+          </button>
+          {coordinates && (
+            <button className="clear-btn" type="button" onClick={clearCurrentLocation}>
+              Clear Location
+            </button>
+          )}
+        </div>
+        {coordinates && (
+          <p className="status-text compact-status">Current location selected</p>
+        )}
         <button className="search-btn primary-action" type="submit">
           Find State & Language
         </button>
@@ -209,6 +267,11 @@ function LocalLanguageHelper() {
               <span>Local language</span>
               <strong>{helperData.detected.language}</strong>
               <small>Mapped from {helperData.detected.state}</small>
+            </div>
+            <div>
+              <span>Language code</span>
+              <strong>{helperData.detected.languageCode}</strong>
+              <small>Used for translations</small>
             </div>
             <div>
               <span>Phrase set</span>
@@ -243,7 +306,7 @@ function LocalLanguageHelper() {
             {translation && (
               <article className="translation-result">
                 <span>{translation.source === "phrasebook" ? "Matched phrasebook" : "API translation"}</span>
-                <strong lang={LANGUAGE_LOCALES[translation.detected.language] || "en"}>{translation.translatedText}</strong>
+                <strong lang={translation.detected.languageCode || LANGUAGE_LOCALES[translation.detected.language] || "en"}>{translation.translatedText}</strong>
                 {translation.pronunciation && <p>Pronunciation: {translation.pronunciation}</p>}
               </article>
             )}
@@ -305,7 +368,7 @@ function LocalLanguageHelper() {
                     <span>{phrase.category}</span>
                   </div>
                   <p className="english-phrase" id={`${phrase.id}-english`}>{phrase.englishPhrase}</p>
-                  <p className="local-phrase" lang={LANGUAGE_LOCALES[helperData.detected.language] || "en"}>{phrase.localPhrase}</p>
+                  <p className="local-phrase" lang={helperData.detected.languageCode || LANGUAGE_LOCALES[helperData.detected.language] || "en"}>{phrase.localPhrase}</p>
                   <p className="pronunciation">Pronunciation: {phrase.pronunciation}</p>
                   <div className="phrase-actions">
                     <button

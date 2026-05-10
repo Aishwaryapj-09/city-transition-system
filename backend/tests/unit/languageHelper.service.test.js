@@ -16,6 +16,7 @@ describe("Local Language Helper Service", () => {
       city: "Bangalore",
       state: "Karnataka",
       language: "Kannada",
+      languageCode: "kn",
       source: "predefined"
     });
     expect(result.phrases).toEqual(
@@ -85,7 +86,50 @@ describe("Local Language Helper Service", () => {
       city: "Dharwad",
       state: "Karnataka",
       language: "Kannada",
+      languageCode: "kn",
       source: "openstreetmap"
+    });
+  });
+
+  it("uses current coordinates to detect state language", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        display_name: "MG Road, Bengaluru, Karnataka, India",
+        address: {
+          suburb: "MG Road",
+          city: "Bengaluru",
+          state: "Karnataka",
+          country: "India"
+        }
+      }
+    });
+
+    const result = await languageHelperService.resolveLanguageHelper({
+      lat: "12.971599",
+      lng: "77.594566"
+    });
+
+    expect(axios.get).toHaveBeenCalledWith(
+      "https://nominatim.openstreetmap.org/reverse",
+      expect.objectContaining({
+        params: expect.objectContaining({
+          lat: "12.971599",
+          lon: "77.594566",
+          addressdetails: 1
+        })
+      })
+    );
+    expect(result.detected).toMatchObject({
+      locality: "MG Road",
+      city: "Bengaluru",
+      state: "Karnataka",
+      language: "Kannada",
+      languageCode: "kn",
+      source: "current-location",
+      coordinates: {
+        lat: 12.971599,
+        lng: 77.594566
+      }
     });
   });
 
