@@ -204,6 +204,128 @@ const translateWithMyMemory = async (text, targetCode) => {
   return response.data?.responseData?.translatedText;
 };
 
+const KANNADA_VOWELS = {
+  ಅ: "a",
+  ಆ: "aa",
+  ಇ: "i",
+  ಈ: "ee",
+  ಉ: "u",
+  ಊ: "oo",
+  ಎ: "e",
+  ಏ: "e",
+  ಐ: "ai",
+  ಒ: "o",
+  ಓ: "o",
+  ಔ: "au"
+};
+
+const KANNADA_VOWEL_SIGNS = {
+  "ಾ": "aa",
+  "ಿ": "i",
+  "ೀ": "ee",
+  "ು": "u",
+  "ೂ": "oo",
+  "ೆ": "e",
+  "ೇ": "e",
+  "ೈ": "ai",
+  "ೊ": "o",
+  "ೋ": "o",
+  "ೌ": "au"
+};
+
+const KANNADA_CONSONANTS = {
+  ಕ: "k",
+  ಖ: "kh",
+  ಗ: "g",
+  ಘ: "gh",
+  ಚ: "ch",
+  ಛ: "chh",
+  ಜ: "j",
+  ಝ: "jh",
+  ಟ: "t",
+  ಠ: "th",
+  ಡ: "d",
+  ಢ: "dh",
+  ಣ: "n",
+  ತ: "t",
+  ಥ: "th",
+  ದ: "d",
+  ಧ: "dh",
+  ನ: "n",
+  ಪ: "p",
+  ಫ: "ph",
+  ಬ: "b",
+  ಭ: "bh",
+  ಮ: "m",
+  ಯ: "y",
+  ರ: "r",
+  ಲ: "l",
+  ವ: "v",
+  ಶ: "sh",
+  ಷ: "sh",
+  ಸ: "s",
+  ಹ: "h",
+  ಳ: "l"
+};
+
+const KANNADA_MARKS = {
+  "ಂ": "n",
+  "ಃ": "h"
+};
+
+const transliterateKannada = (text) => {
+  const characters = Array.from(String(text || ""));
+  let romanizedText = "";
+
+  for (let index = 0; index < characters.length; index += 1) {
+    const character = characters[index];
+
+    if (KANNADA_VOWELS[character]) {
+      romanizedText += KANNADA_VOWELS[character];
+      continue;
+    }
+
+    if (KANNADA_CONSONANTS[character]) {
+      const nextCharacter = characters[index + 1];
+      const vowelSign = KANNADA_VOWEL_SIGNS[nextCharacter];
+
+      romanizedText += KANNADA_CONSONANTS[character];
+
+      if (vowelSign) {
+        romanizedText += vowelSign;
+        index += 1;
+      } else if (nextCharacter === "್") {
+        index += 1;
+      } else {
+        romanizedText += "a";
+      }
+
+      continue;
+    }
+
+    if (KANNADA_MARKS[character]) {
+      romanizedText += KANNADA_MARKS[character];
+      continue;
+    }
+
+    if (!KANNADA_VOWEL_SIGNS[character] && character !== "್") {
+      romanizedText += character;
+    }
+  }
+
+  return romanizedText
+    .replaceAll(/\s+/g, " ")
+    .trim();
+};
+
+const romanizeTranslatedText = (language, translatedText) => {
+  if (language === "Kannada") {
+    return transliterateKannada(translatedText);
+  }
+
+  return "";
+};
+
 const translateEnglishText = async ({ place, text }) => {
   if (!text || !String(text).trim()) {
     const error = new Error("text is required");
@@ -244,11 +366,13 @@ const translateEnglishText = async ({ place, text }) => {
       throw new Error("Translation API returned no translated text");
     }
 
+    const romanizedText = romanizeTranslatedText(language, translatedText);
+
     return {
       input: englishText,
       translatedText,
-      pronunciation: "",
-      romanizedText: "",
+      pronunciation: romanizedText,
+      romanizedText,
       detected: helper.detected,
       source: process.env.TRANSLATION_API_URL ? "translation-api" : "mymemory-api"
     };

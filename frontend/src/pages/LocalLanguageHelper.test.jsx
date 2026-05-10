@@ -136,9 +136,10 @@ test("translates custom English text using the detected place", async () => {
   API.get.mockResolvedValue({ data: helperResponse });
   API.post.mockResolvedValue({
     data: {
-      input: "I need a rented room",
-      translatedText: "ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು",
-      pronunciation: "",
+      input: "nice",
+      translatedText: "ಚೆಂದಗು",
+      pronunciation: "chendagu",
+      romanizedText: "chendagu",
       detected: helperResponse.detected,
       source: "mymemory-api"
     }
@@ -156,18 +157,19 @@ test("translates custom English text using the detected place", async () => {
   });
 
   fireEvent.change(screen.getByRole("textbox", { name: "English sentence" }), {
-    target: { value: "I need a rented room" }
+    target: { value: "nice" }
   });
   fireEvent.click(screen.getByRole("button", { name: /^translate$/i }));
 
   expect(API.post).toHaveBeenCalledWith("/language-helper/translate", {
     place: "Whitefield",
-    text: "I need a rented room"
+    text: "nice"
   });
 
   await waitFor(() => {
-    expect(screen.getByText("ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು")).toBeInTheDocument();
+    expect(screen.getByText("ಚೆಂದಗು")).toBeInTheDocument();
   });
+  expect(screen.getByText("English letters: chendagu")).toBeInTheDocument();
 });
 
 test("shows English letters below phrasebook translation", async () => {

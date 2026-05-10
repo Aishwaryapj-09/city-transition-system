@@ -178,27 +178,29 @@ describe("Local Language Helper Service", () => {
       .mockResolvedValueOnce({
         data: {
           responseData: {
-            translatedText: "ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು"
+            translatedText: "ಚೆಂದಗು"
           }
         }
       });
 
     const result = await languageHelperService.translateEnglishText({
       place: "Whitefield",
-      text: "I need a rented room"
+      text: "nice"
     });
 
     expect(axios.get).toHaveBeenLastCalledWith(
       "https://api.mymemory.translated.net/get",
       expect.objectContaining({
         params: {
-          q: "I need a rented room",
+          q: "nice",
           langpair: "en|kn"
         }
       })
     );
     expect(result).toMatchObject({
-      translatedText: "ನನಗೆ ಬಾಡಿಗೆ ಕೊಠಡಿ ಬೇಕು",
+      translatedText: "ಚೆಂದಗು",
+      pronunciation: "chendagu",
+      romanizedText: "chendagu",
       source: "mymemory-api"
     });
   });
