@@ -3,6 +3,7 @@ node_modules/
 
 # Coverage
 coverage/
+performance-results/
 
 # Build
 build/

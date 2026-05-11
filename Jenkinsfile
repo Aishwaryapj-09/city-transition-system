@@ -24,6 +24,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
+                bat 'npm install'
                 dir('backend') {
                     bat 'npm install'
                 }
@@ -111,6 +112,7 @@ pipeline {
 
         stage('Dependency Security Scan') {
             steps {
+                bat 'npm audit --omit=dev --audit-level=high || exit 0'
                 dir('backend') {
                     bat 'npm audit --audit-level=high || exit 0'
                 }
@@ -137,7 +139,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     bat """
-                    docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
                     docker push %BACKEND_IMAGE%:%TAG%
                     docker push %FRONTEND_IMAGE%:%TAG%
                     docker logout
@@ -146,26 +148,43 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes with Ansible IaC') {
             steps {
-                bat 'kubectl config use-context docker-desktop'
-                bat 'kubectl apply -f k8s/ --validate=false'
-                bat 'kubectl rollout restart deployment backend'
-                bat 'kubectl rollout restart deployment frontend'
+                bat 'ansible-playbook -i ansible/inventory.ini ansible/deploy.yml'
             }
         }
 
         stage('Verify Deployment') {
             steps {
+                bat 'kubectl get deployments'
                 bat 'kubectl get pods'
                 bat 'kubectl get services'
+                bat 'curl -f http://localhost:30008/api/health'
+                bat 'curl -f http://localhost:30008/metrics'
+            }
+        }
+
+        stage('Postman API Smoke Tests - Newman') {
+            steps {
+                bat 'npm run api:test:deployed'
+            }
+        }
+
+        stage('Performance Smoke Tests') {
+            steps {
+                bat 'npm run perf:test:deployed'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
+                }
             }
         }
 
         stage('Info') {
             steps {
                 echo "FULL DEVSECOPS PIPELINE ENABLED"
-                echo "Nearby Essentials Finder and Local Language Helper are covered by unit, integration, coverage, lint, SonarQube, Docker, and Kubernetes stages"
+                echo "Nearby Essentials Finder and Local Language Helper are covered by unit, integration, coverage, lint, SonarQube, Docker, Kubernetes, Prometheus metrics, Ansible IaC deployment, Postman/Newman API smoke, and performance smoke stages"
             }
         }
     }
@@ -179,6 +198,7 @@ pipeline {
         }
         always {
             archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
             echo 'Pipeline finished'
         }
     }

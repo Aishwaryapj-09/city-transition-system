@@ -12,6 +12,7 @@ const nearbyRoutes = require("./routes/nearby.routes");
 const languageHelperRoutes = require("./routes/language-helper.routes");
 
 const errorMiddleware = require("./middleware/errorMiddleware");
+const { metricsHandler, metricsMiddleware } = require("./middleware/metrics.middleware");
 
 const app = express();
 
@@ -26,6 +27,10 @@ app.use(cors({
 
 // Security headers
 app.use(helmet());
+
+// Prometheus metrics endpoint
+app.get("/metrics", metricsHandler);
+app.use(metricsMiddleware);
 
 // Parse JSON body
 app.use(express.json({ limit: "10kb" }));

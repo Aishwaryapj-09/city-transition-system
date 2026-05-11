@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app: blackbox-exporter
+    spec:
+      containers:
+        - name: blackbox-exporter
+          image: prom/blackbox-exporter:v0.25.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/blackbox_exporter/blackbox.yml"
+          ports:
+            - containerPort: 9115
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9115
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9115
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - NET_RAW
+          volumeMounts:
+            - name: blackbox-config
+              mountPath: /etc/blackbox_exporter/blackbox.yml
+              subPath: blackbox.yml
+      volumes:
+        - name: blackbox-config
+          configMap:
+            name: blackbox-config
