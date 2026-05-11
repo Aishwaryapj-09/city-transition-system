@@ -16,67 +16,44 @@ const { metricsHandler, metricsMiddleware } = require("./middleware/metrics.midd
 
 const app = express();
 
-
-// ---------------- SECURITY ----------------
-
-// Enable CORS
+// Security middleware.
 app.use(cors({
   origin: true,
   credentials: true
 }));
-
-// Security headers
 app.use(helmet());
 
-// Prometheus metrics endpoint
+// Prometheus scrapes this endpoint. Keep it before the API rate limiter so
+// monitoring never consumes public API quota.
 app.get("/metrics", metricsHandler);
 app.use(metricsMiddleware);
 
-// Parse JSON body
 app.use(express.json({ limit: "10kb" }));
 
+function healthHandler(req, res) {
+  res.status(200).json({
+    status: "OK",
+    message: "Server running"
+  });
+}
 
-// ---------------- RATE LIMIT ----------------
+// Kubernetes, Jenkins, Blackbox Exporter, and viva demos can use either path.
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 const globalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,   // 15 minutes
-  max: 100,                   // max requests
+  windowMs: 1 * 60 * 1000,
+  max: 100,
   message: "Too many requests from this IP. Try again later."
 });
 
 app.use(globalLimiter);
 
-
-// ---------------- ROUTES ----------------
-
-// Auth routes
 app.use("/api/auth", authRoutes);
-
-// All accommodation + listing features
-
-// KEEP accommodation
 app.use("/api/accommodation", accommodationRoutes);
-
-// ADD this line 👇
 app.use("/api/listings", listingRoutes);
-
-// Nearby essentials finder
 app.use("/api/nearby", nearbyRoutes);
-
-// Local language helper
 app.use("/api/language-helper", languageHelperRoutes);
-
-// ---------------- HEALTH CHECK ----------------
-
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    message: "Server running"
-  });
-});
-
-
-// ---------------- 404 HANDLER ----------------
 
 app.use((req, res) => {
   res.status(404).json({
@@ -84,10 +61,6 @@ app.use((req, res) => {
   });
 });
 
-
-// ---------------- GLOBAL ERROR HANDLER ----------------
-
 app.use(errorMiddleware);
-
 
 module.exports = app;

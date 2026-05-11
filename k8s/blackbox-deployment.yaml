@@ -1,7 +1,13 @@
+# Blackbox Exporter deployment for uptime checks.
+# It performs HTTP probes on behalf of Prometheus.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: blackbox-exporter
+  namespace: default
+  labels:
+    app: blackbox-exporter
+    component: monitoring
 spec:
   replicas: 1
   selector:
@@ -11,6 +17,7 @@ spec:
     metadata:
       labels:
         app: blackbox-exporter
+        component: monitoring
     spec:
       containers:
         - name: blackbox-exporter
@@ -19,7 +26,8 @@ spec:
           args:
             - "--config.file=/etc/blackbox_exporter/blackbox.yml"
           ports:
-            - containerPort: 9115
+            - name: http
+              containerPort: 9115
           readinessProbe:
             httpGet:
               path: /-/ready
@@ -42,8 +50,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              add:
-                - NET_RAW
+              drop:
+                - ALL
           volumeMounts:
             - name: blackbox-config
               mountPath: /etc/blackbox_exporter/blackbox.yml

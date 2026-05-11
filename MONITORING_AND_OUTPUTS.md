@@ -1,93 +1,70 @@
-# Continuous Monitoring and Output Guide
+# City Transition System Monitoring Guide
 
-This guide shows what was added for continuous monitoring, performance testing, and where to view each output.
+This project no longer uses standalone performance testing with k6 or custom
+Node.js scripts. Performance visibility is now handled through continuous
+application monitoring with Prometheus and Grafana.
 
-## Is Prometheus Done?
+## Monitoring Architecture
 
-Yes. Prometheus monitoring is added for this app.
+```mermaid
+flowchart LR
+  User["Users / Admins / Owners"] --> Frontend["React Frontend"]
+  Frontend --> Backend["Node.js Backend API"]
+  Backend --> Metrics["/metrics endpoint"]
+  Backend --> Health["/health endpoint"]
 
-Implemented monitoring:
-
-- Backend Prometheus metrics endpoint: `/metrics`
-- HTTP request count by route/status/method
-- HTTP request duration histogram for p95/p99 latency
-- Backend uptime metric
-- Prometheus Kubernetes deployment
-- Blackbox HTTP probes for frontend and backend availability
-- Blackbox ICMP probes for network reachability style checks
-- Jenkins verification of `/api/health` and `/metrics`
-
-## Is Continuous Deployment Done?
-
-Yes. The Jenkinsfile has a continuous deployment path:
-
-```text
-Checkout -> Install -> Lint -> Unit/Integration Tests -> Coverage -> SonarQube
--> npm audit -> Docker build -> Docker push -> Ansible Kubernetes deploy
--> Health/Metrics verify -> Postman/Newman smoke -> Performance smoke
+  Prometheus["Prometheus"] --> Metrics
+  Prometheus --> Blackbox["Blackbox Exporter"]
+  Blackbox --> Health
+  Blackbox --> Frontend
+  Prometheus --> CAdvisor["cAdvisor"]
+  Prometheus --> NodeExporter["Node Exporter"]
+  Grafana["Grafana Dashboard"] --> Prometheus
+  Jenkins["Jenkins Pipeline"] --> Kubernetes["Kubernetes Deployment"]
+  Kubernetes --> Backend
+  Kubernetes --> Frontend
+  Kubernetes --> Prometheus
+  Kubernetes --> Grafana
 ```
 
-The deployment stage is:
+Explanation:
 
-```text
-Deploy to Kubernetes with Ansible IaC
-```
+- The backend exposes `/metrics` using `prom-client`.
+- Prometheus scrapes metrics every 10 to 15 seconds.
+- Grafana reads Prometheus data and shows dashboards.
+- Blackbox Exporter checks whether frontend and backend URLs are reachable.
+- cAdvisor shows container CPU and memory usage.
+- Node Exporter shows Kubernetes node CPU, memory, disk, and network usage.
+- Jenkins deploys the stack and verifies monitoring health without load tests.
 
-Important: Jenkins agent must have `ansible-playbook`, `kubectl`, Docker, Node.js/npm, and curl installed. If Ansible is not installed, the CD stage will fail before deployment.
+## Main Metrics Only
 
-## How to View Prometheus Output
+The setup focuses on metrics that are easy to explain in a viva:
 
-After Jenkins deployment or manual Ansible deployment, open:
+- API response time and latency:
+  `city_transition_http_request_duration_seconds_bucket`
+- Request throughput:
+  `rate(city_transition_http_requests_total[1m])`
+- HTTP request count:
+  `city_transition_http_requests_total`
+- Error rate:
+  `city_transition_http_errors_total`
+- Application health:
+  `city_transition_up`
+- Application uptime:
+  `city_transition_process_uptime_seconds`
+- Backend CPU:
+  `rate(city_transition_process_cpu_seconds_total[5m])`
+- Backend memory:
+  `city_transition_process_resident_memory_bytes`
+- Container CPU and memory:
+  `container_cpu_usage_seconds_total`, `container_memory_usage_bytes`
+- Uptime probes:
+  `probe_success`, `probe_duration_seconds`
+- Kubernetes pod health:
+  `kubectl get pods`, readiness probes, liveness probes
 
-```text
-http://localhost:30090
-```
-
-Check scrape status:
-
-```text
-http://localhost:30090/targets
-```
-
-Expected Prometheus targets:
-
-- `city-transition-backend`
-- `prometheus`
-- `blackbox-http`
-- `blackbox-icmp`
-
-## Jenkins Report Folder
-
-All generated reports are saved in one folder:
-
-```text
-devsecops-reports/
-```
-
-Open Jenkins build, then open **Build Artifacts** to download reports such as:
-
-- `backend-eslint-report.json`
-- `frontend-eslint-report.json`
-- `nearby-unit-test-report.json`
-- `nearby-integration-test-report.json`
-- `language-helper-unit-test-report.json`
-- `language-helper-integration-test-report.json`
-- `backend-coverage-test-report.json`
-- `backend-integration-test-report.json`
-- `sonarqube-scanner-report.txt`
-- `root-npm-audit-report.json`
-- `backend-npm-audit-report.json`
-- `docker-image-report.json`
-- `deployment-report.txt`
-- `kubernetes-verification-report.txt`
-- `backend-health-report.json`
-- `prometheus-metrics-sample.txt`
-- `postman-api-smoke-report.json`
-- `postman-api-smoke-report.xml`
-- `performance-report.json`
-- `performance-summary.txt`
-
-## Application Metrics Queries
+## Prometheus Queries
 
 Backend up:
 
@@ -101,10 +78,16 @@ Backend uptime:
 city_transition_process_uptime_seconds
 ```
 
-Requests per second by route/status:
+Request throughput:
 
 ```promql
-sum(rate(city_transition_http_requests_total[5m])) by (route, status)
+sum(rate(city_transition_http_requests_total[1m]))
+```
+
+Request count by route and status:
+
+```promql
+sum(city_transition_http_requests_total) by (route, status_code)
 ```
 
 Average API latency by route:
@@ -115,7 +98,7 @@ sum(rate(city_transition_http_request_duration_seconds_sum[5m])) by (route)
 sum(rate(city_transition_http_request_duration_seconds_count[5m])) by (route)
 ```
 
-P95 API latency by route:
+p95 API response time by route:
 
 ```promql
 histogram_quantile(
@@ -124,173 +107,253 @@ histogram_quantile(
 )
 ```
 
-P99 API latency by route:
-
-```promql
-histogram_quantile(
-  0.99,
-  sum(rate(city_transition_http_request_duration_seconds_bucket[5m])) by (le, route)
-)
-```
-
-Server error rate:
+4xx and 5xx error rate:
 
 ```promql
 100 *
-sum(rate(city_transition_http_requests_total{status=~"5.."}[5m]))
+sum(rate(city_transition_http_errors_total[5m]))
 /
-sum(rate(city_transition_http_requests_total[5m]))
+clamp_min(sum(rate(city_transition_http_requests_total[5m])), 1)
 ```
 
-## HTTP Availability Monitoring
+Backend CPU:
 
-Blackbox HTTP probe success:
+```promql
+rate(city_transition_process_cpu_seconds_total[5m])
+```
+
+Backend memory:
+
+```promql
+city_transition_process_resident_memory_bytes
+```
+
+Container CPU:
+
+```promql
+sum(rate(container_cpu_usage_seconds_total{image!=""}[5m])) by (name)
+```
+
+Container memory:
+
+```promql
+sum(container_memory_usage_bytes{image!=""}) by (name)
+```
+
+Node CPU usage:
+
+```promql
+100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))
+```
+
+Node memory usage:
+
+```promql
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+```
+
+HTTP uptime:
 
 ```promql
 probe_success{job="blackbox-http"}
 ```
 
-HTTP response time:
+Endpoint probe latency:
 
 ```promql
 probe_duration_seconds{job="blackbox-http"}
 ```
 
-HTTP status code:
+## Grafana Dashboard
 
-```promql
-probe_http_status_code{job="blackbox-http"}
-```
+Grafana is auto-provisioned with:
 
-Availability percentage over 10 minutes:
+- Prometheus datasource
+- City Transition System dashboard
+- Panels for health, uptime, throughput, response time, latency, error rate,
+  backend CPU, backend memory, container CPU, container memory, and uptime probes
 
-```promql
-100 * avg_over_time(probe_success{job="blackbox-http"}[10m])
-```
-
-## Network and Packet Loss Related Monitoring
-
-For this web app, packet-level capture is not part of the application itself. The applicable continuous network check is ICMP reachability through Blackbox Exporter.
-
-ICMP probe success:
-
-```promql
-probe_success{job="blackbox-icmp"}
-```
-
-Approximate probe loss percentage over 5 minutes:
-
-```promql
-100 * (1 - avg_over_time(probe_success{job="blackbox-icmp"}[5m]))
-```
-
-ICMP probe latency:
-
-```promql
-avg_over_time(probe_duration_seconds{job="blackbox-icmp"}[5m])
-```
-
-Note: This shows probe failure/loss from Prometheus to Kubernetes services. For true packet-level loss on every node/interface, add infrastructure monitoring such as node exporter, CNI metrics, or eBPF/network plugin metrics.
-
-## Performance Testing Output
-
-Jenkins stage:
+Docker URL:
 
 ```text
-Performance Smoke Tests
+http://localhost:3001
 ```
 
-Artifacts archived by Jenkins:
+Kubernetes URL:
 
 ```text
-devsecops-reports/performance-report.json
-devsecops-reports/performance-summary.txt
+http://localhost:30300
 ```
 
-Local deployed performance test:
-
-```bash
-npm run perf:test:deployed
-```
-
-Local backend performance test:
-
-```bash
-npm run perf:test
-```
-
-Tune test load:
-
-```bash
-set PERF_REQUESTS=200
-set PERF_CONCURRENCY=20
-set PERF_MAX_P95_MS=1500
-npm run perf:test:deployed
-```
-
-Performance report includes:
-
-- Total requests
-- Passed and failed requests
-- Success rate
-- Throughput per second
-- Min latency
-- Average latency
-- P95 latency
-- P99 latency
-- Max latency
-
-## API Testing Output
-
-Jenkins stage:
+Demo login:
 
 ```text
-Postman API Smoke Tests - Newman
+Username: admin
+Password: admin
 ```
 
-Manual deployed API smoke:
+## Docker Monitoring Setup
+
+Start the full local stack:
 
 ```bash
-npm run api:test:deployed
+docker-compose up --build
 ```
 
-Manual local API smoke:
+Open:
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:5000/health`
+- Backend metrics: `http://localhost:5000/metrics`
+- Prometheus: `http://localhost:9090`
+- Prometheus targets: `http://localhost:9090/targets`
+- Grafana: `http://localhost:3001`
+- cAdvisor: `http://localhost:8080`
+
+Docker monitoring files:
+
+- `docker-compose.yml`
+- `monitoring/prometheus/prometheus-docker.yml`
+- `monitoring/blackbox/blackbox.yml`
+- `monitoring/grafana/provisioning/datasources/prometheus.yml`
+- `monitoring/grafana/provisioning/dashboards/dashboards.yml`
+- `monitoring/grafana/dashboards/city-transition-dashboard.json`
+
+## Kubernetes Monitoring Setup
+
+Apply all manifests:
 
 ```bash
-npm run api:test:smoke
+kubectl apply -f k8s/
 ```
 
-Full Postman collection:
-
-```bash
-npm run api:test
-```
-
-## Kubernetes Output Commands
-
-View deployments:
-
-```bash
-kubectl get deployments
-```
-
-View pods:
-
-```bash
-kubectl get pods
-```
-
-View services and NodePorts:
-
-```bash
-kubectl get services
-```
-
-View rollout status:
+Check rollout:
 
 ```bash
 kubectl rollout status deployment/backend
 kubectl rollout status deployment/frontend
 kubectl rollout status deployment/prometheus
 kubectl rollout status deployment/blackbox-exporter
+kubectl rollout status deployment/grafana
 ```
+
+Check pod health:
+
+```bash
+kubectl get pods -o wide
+kubectl get deployments
+kubectl get daemonsets
+kubectl get services
+```
+
+Open:
+
+- Frontend: `http://localhost:30007`
+- Backend API: `http://localhost:30008`
+- Backend health: `http://localhost:30008/health`
+- Backend metrics: `http://localhost:30008/metrics`
+- Prometheus: `http://localhost:30090`
+- Prometheus targets: `http://localhost:30090/targets`
+- Grafana: `http://localhost:30300`
+
+Kubernetes monitoring files:
+
+- `k8s/prometheus-configmap.yaml`
+- `k8s/prometheus-deployment.yaml`
+- `k8s/prometheus-service.yaml`
+- `k8s/grafana-secret.yaml`
+- `k8s/grafana-configmaps.yaml`
+- `k8s/grafana-deployment.yaml`
+- `k8s/grafana-service.yaml`
+- `k8s/blackbox-configmap.yaml`
+- `k8s/blackbox-deployment.yaml`
+- `k8s/blackbox-service.yaml`
+- `k8s/node-exporter.yaml`
+- `k8s/cadvisor.yaml`
+
+## Jenkins Pipeline Integration
+
+The Jenkinsfile now uses this flow:
+
+```text
+Checkout
+Install dependencies
+ESLint
+Unit and integration tests
+Coverage
+SonarQube
+npm audit
+Docker build
+Docker push
+Kubernetes deployment with Ansible or kubectl fallback
+Deployment verification
+Postman/Newman smoke tests
+Prometheus and Grafana monitoring check
+Pipeline summary
+```
+
+Removed from Jenkins:
+
+- `tools/performance-test.js`
+- k6 performance test stage
+- npm performance scripts
+- CI failure caused by strict standalone performance validation
+
+Jenkins monitoring artifacts:
+
+- `devsecops-reports/kubernetes-verification-report.txt`
+- `devsecops-reports/backend-health-report.json`
+- `devsecops-reports/prometheus-metrics-sample.txt`
+- `devsecops-reports/prometheus-metrics-snapshot.txt`
+- `devsecops-reports/monitoring-health-report.txt`
+
+## Viva-Ready Explanations
+
+Continuous monitoring:
+
+Continuous monitoring means the system is observed all the time after
+deployment. Instead of running one temporary performance script, Prometheus
+keeps collecting metrics every few seconds and Grafana keeps showing the latest
+health and performance data.
+
+Observability:
+
+Observability means we can understand what is happening inside the application
+from outside signals. In this project, metrics such as request count, latency,
+error rate, CPU, memory, and uptime help explain whether the system is healthy.
+
+Application Performance Monitoring:
+
+Application Performance Monitoring focuses on backend API behavior. The
+`/metrics` endpoint records how many API calls happen, how long they take, and
+how many fail with 4xx or 5xx status codes.
+
+Infrastructure monitoring:
+
+Infrastructure monitoring checks the Kubernetes nodes. Node Exporter provides
+CPU, memory, disk, filesystem, and network metrics for the host machines.
+
+Container monitoring:
+
+Container monitoring checks resource usage inside running containers. cAdvisor
+shows CPU and memory usage for backend, frontend, Prometheus, Grafana, and other
+containers.
+
+Grafana visualization:
+
+Grafana converts Prometheus queries into graphs and stat panels. In the demo,
+the dashboard shows response time, latency, throughput, CPU usage, memory usage,
+error rate, uptime, and container resource usage in real time.
+
+## Demo Script
+
+1. Run Jenkins pipeline.
+2. Show the successful pipeline summary.
+3. Open backend health: `http://localhost:30008/health`.
+4. Open backend metrics: `http://localhost:30008/metrics`.
+5. Open Prometheus targets: `http://localhost:30090/targets`.
+6. Open Grafana: `http://localhost:30300`.
+7. Refresh the frontend and call a few APIs.
+8. Show Grafana panels updating for throughput, latency, and request count.
+9. Explain that no standalone load/performance script is required.
+10. Show Jenkins archived `monitoring-health-report.txt`.

@@ -1,7 +1,13 @@
+# Backend API deployment.
+# The pod exposes /health for Kubernetes probes and /metrics for Prometheus.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  namespace: default
+  labels:
+    app: backend
+    component: api
 spec:
   replicas: 1
   selector:
@@ -11,13 +17,20 @@ spec:
     metadata:
       labels:
         app: backend
+        component: api
+      annotations:
+        # Optional auto-discovery labels for the kubernetes-pods scrape job.
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "5000"
     spec:
       containers:
         - name: backend
           image: aishwaryapj09/city-transition-backend:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 5000
+            - name: http
+              containerPort: 5000
           readinessProbe:
             httpGet:
               path: /api/health
@@ -44,7 +57,5 @@ spec:
               value: "mongodb://host.docker.internal:27017/city-transition-system"
             - name: JWT_SECRET
               value: "mysecretkey123"
-
-      # 🔥 ADD THIS BLOCK (IMPORTANT FOR FRIEND SYSTEM)
       imagePullSecrets:
         - name: dockerhub-secret

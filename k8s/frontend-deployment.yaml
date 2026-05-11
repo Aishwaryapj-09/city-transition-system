@@ -1,7 +1,13 @@
+# Frontend deployment for the React application.
+# Kubernetes probes check / because the frontend is served as static content.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: default
+  labels:
+    app: frontend
+    component: web
 spec:
   replicas: 1
   selector:
@@ -11,13 +17,15 @@ spec:
     metadata:
       labels:
         app: frontend
+        component: web
     spec:
       containers:
         - name: frontend
           image: aishwaryapj09/city-transition-frontend:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: 3000
           readinessProbe:
             httpGet:
               path: /
@@ -37,7 +45,5 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
-
-      # 🔥 ADD THIS ONLY
       imagePullSecrets:
         - name: dockerhub-secret

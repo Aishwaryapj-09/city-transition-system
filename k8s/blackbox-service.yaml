@@ -1,7 +1,12 @@
+# Internal service used by Prometheus to reach Blackbox Exporter.
 apiVersion: v1
 kind: Service
 metadata:
   name: blackbox-exporter
+  namespace: default
+  labels:
+    app: blackbox-exporter
+    component: monitoring
 spec:
   type: ClusterIP
   selector:

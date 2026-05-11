@@ -1,0 +1,58 @@
+# Prometheus configuration for Docker Compose demos.
+# Prometheus is pull-based: it scrapes each target on a fixed interval and
+# stores the numbers as time-series data for Grafana dashboards.
+global:
+  # Keep this short for a live college demo so graphs update quickly.
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: "docker"
+    project: "city-transition-system"
+
+scrape_configs:
+  # Application Performance Monitoring: backend /metrics endpoint.
+  - job_name: "city-transition-backend"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - backend:5000
+        labels:
+          service: "backend"
+
+  # Prometheus self-monitoring so the monitoring service can be observed too.
+  - job_name: "prometheus"
+    static_configs:
+      - targets:
+          - prometheus:9090
+        labels:
+          service: "prometheus"
+
+  # Container monitoring from cAdvisor.
+  - job_name: "cadvisor"
+    static_configs:
+      - targets:
+          - cadvisor:8080
+        labels:
+          service: "cadvisor"
+
+  # Uptime monitoring: Blackbox Exporter checks HTTP availability.
+  - job_name: "blackbox-http"
+    metrics_path: /probe
+    params:
+      module:
+        - http_2xx
+    static_configs:
+      - targets:
+          - http://backend:5000/health
+          - http://backend:5000/metrics
+          - http://frontend:3000
+        labels:
+          probe_type: "http"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

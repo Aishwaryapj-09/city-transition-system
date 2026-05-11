@@ -1,7 +1,13 @@
+# Prometheus deployment for continuous monitoring.
+# It stores scraped metrics and serves PromQL queries for Grafana.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
+  namespace: default
+  labels:
+    app: prometheus
+    component: monitoring
 spec:
   replicas: 1
   selector:
@@ -11,6 +17,7 @@ spec:
     metadata:
       labels:
         app: prometheus
+        component: monitoring
     spec:
       containers:
         - name: prometheus
@@ -20,7 +27,8 @@ spec:
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.path=/prometheus"
           ports:
-            - containerPort: 9090
+            - name: http
+              containerPort: 9090
           readinessProbe:
             httpGet:
               path: /-/ready
@@ -41,9 +49,11 @@ spec:
               cpu: "500m"
               memory: "512Mi"
           volumeMounts:
+            # Prometheus configuration.
             - name: prometheus-config
               mountPath: /etc/prometheus/prometheus.yml
               subPath: prometheus.yml
+            # Demo storage. For production use a PersistentVolumeClaim.
             - name: prometheus-data
               mountPath: /prometheus
       volumes:

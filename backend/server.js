@@ -1,11 +1,12 @@
 require("dotenv").config();
+
 const mongoose = require("mongoose");
 const app = require("./app");
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// ✅ Only connect to real DB if NOT testing
+// Only connect to the real database outside Jest tests.
 if (process.env.NODE_ENV !== "test") {
   if (!MONGO_URI) {
     console.error("Missing MONGO_URI");

@@ -1,96 +1,98 @@
 # DevSecOps Deployment Roadmap
 
-This roadmap explains the Prometheus, Ansible IaC, continuous deployment, and Postman API testing work added for the existing City Transition System features.
+This roadmap explains the DevSecOps flow for the City Transition System after
+removing standalone performance testing and moving to continuous monitoring.
 
 ## Goal
 
-Make the project a complete DevSecOps implementation where every change is tested, scanned, containerized, deployed continuously, monitored, and validated through API smoke tests.
+Build, test, scan, containerize, deploy, and monitor the application in a way
+that is professional enough for a live demo and simple enough to explain in a
+college viva.
 
 ## Continuous Deployment Flow
 
 1. Developer pushes code to GitHub.
-2. Jenkins checks out the latest source.
+2. Jenkins checks out the source code.
 3. Jenkins installs dependencies for root tooling, backend, and frontend.
-4. Jenkins runs linting, unit tests, integration tests, and coverage.
+4. Jenkins runs ESLint, unit tests, integration tests, and coverage.
 5. Jenkins runs SonarQube static code analysis.
 6. Jenkins runs npm audit security checks.
 7. Jenkins builds backend and frontend Docker images.
 8. Jenkins pushes images to Docker Hub.
-9. Jenkins runs the Ansible playbook.
-10. Ansible applies Kubernetes manifests and waits for rollouts.
-11. Jenkins verifies health and Prometheus metrics endpoints.
-12. Jenkins runs Postman/Newman smoke tests against the deployed backend.
-13. Jenkins runs performance smoke tests and archives latency/throughput reports.
+9. Jenkins runs the Ansible playbook or kubectl fallback.
+10. Kubernetes deploys the app and monitoring stack.
+11. Jenkins verifies `/health` and `/metrics`.
+12. Jenkins runs Postman/Newman API smoke tests.
+13. Jenkins checks Prometheus and Grafana monitoring health.
+
+There is no k6 stage and no custom `performance-test.js` stage.
 
 ## Existing Features Covered
 
-- Health API: `/api/health`
+- Health API: `/health` and `/api/health`
 - Authentication: `/api/auth/register`, `/api/auth/login`, `/api/auth/protected`
 - Verified listings: `/api/listings`
-- Accommodation validation: `/api/accommodation`
-- Nearby essentials validation: `/api/nearby`
-- Local language helper validation: `/api/language-helper`
-- Monitoring: `/metrics`
-- Continuous availability: Blackbox HTTP probes
-- Network reachability: Blackbox ICMP probes
+- Accommodation finder: `/api/accommodation`
+- Nearby essentials finder: `/api/nearby`
+- Local language helper: `/api/language-helper`
+- Prometheus metrics: `/metrics`
 
-## Prometheus Monitoring
+## Monitoring Work Added
 
-Prometheus work added:
+- Backend `/metrics` endpoint using `prom-client`.
+- HTTP request count by method, route, and status code.
+- HTTP request duration histogram for average and p95 latency.
+- HTTP error counter for 4xx and 5xx error rate.
+- Backend uptime and health gauges.
+- Node.js CPU and memory metrics.
+- Prometheus deployment and scrape configuration.
+- Grafana datasource and dashboard provisioning.
+- Blackbox Exporter for uptime checks.
+- cAdvisor for container resource monitoring.
+- Node Exporter for infrastructure monitoring.
+- Kubernetes readiness and liveness probes.
 
-- Backend `/metrics` endpoint.
-- HTTP request counters by method, route, and status.
-- HTTP request duration summary.
-- Backend uptime metric.
-- HTTP latency histogram for p95 and p99 performance queries.
-- Kubernetes Prometheus ConfigMap, Deployment, and Service.
-- Backend service scrape annotations.
-- Blackbox Exporter for HTTP and ICMP probing.
+## Prometheus and Grafana URLs
 
-Prometheus UI:
-
-```text
-http://localhost:30090
-```
-
-Metrics endpoint:
+Kubernetes:
 
 ```text
-http://localhost:30008/metrics
+Backend metrics: http://localhost:30008/metrics
+Prometheus:      http://localhost:30090
+Grafana:         http://localhost:30300
 ```
 
-Useful queries:
+Docker Compose:
+
+```text
+Backend metrics: http://localhost:5000/metrics
+Prometheus:      http://localhost:9090
+Grafana:         http://localhost:3001
+```
+
+## Important Prometheus Queries
 
 ```promql
 city_transition_up
-city_transition_http_requests_total
-city_transition_http_request_duration_seconds_bucket
 city_transition_process_uptime_seconds
+sum(rate(city_transition_http_requests_total[1m]))
+sum(city_transition_http_requests_total) by (route, status_code)
+histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket[5m])) by (le, route))
+100 * sum(rate(city_transition_http_errors_total[5m])) / clamp_min(sum(rate(city_transition_http_requests_total[5m])), 1)
+rate(city_transition_process_cpu_seconds_total[5m])
+city_transition_process_resident_memory_bytes
 probe_success{job="blackbox-http"}
-probe_success{job="blackbox-icmp"}
-```
-
-Packet loss style query:
-
-```promql
-100 * (1 - avg_over_time(probe_success{job="blackbox-icmp"}[5m]))
+probe_duration_seconds{job="blackbox-http"}
 ```
 
 ## Ansible IaC
 
-Ansible work added:
-
-- `ansible/inventory.ini`
-- `ansible/deploy.yml`
-- Deployment README in `ansible/README.md`
-
 The playbook:
 
-- Selects Kubernetes context.
-- Applies all Kubernetes manifests from `k8s/`.
-- Restarts backend and frontend to pull the latest Docker images.
-- Waits for backend, frontend, and Prometheus rollout completion.
-- Waits for Blackbox Exporter rollout completion.
+- Selects the Kubernetes context.
+- Applies all manifests from `k8s/`.
+- Restarts backend and frontend deployments after Jenkins pushes images.
+- Waits for backend, frontend, Prometheus, Blackbox Exporter, and Grafana.
 - Prints service endpoints for Jenkins logs.
 
 Run manually:
@@ -99,62 +101,24 @@ Run manually:
 ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
 ```
 
-## Postman and Newman API Testing
-
-Postman work added:
-
-- `postman/city-transition-api.postman_collection.json`
-- `postman/local.postman_environment.json`
-- Newman npm scripts in root `package.json`
-
-Jenkins runs the stable `CD Smoke` folder after deployment:
-
-```bash
-npm run api:test:deployed
-```
-
-Local smoke test:
-
-```bash
-npm run api:test:smoke
-```
-
-Full collection:
-
-```bash
-npm run api:test
-```
-
-## Performance Testing
-
-Performance work added:
-
-- `tools/performance-test.js`
-- `npm run perf:test`
-- `npm run perf:test:deployed`
-- Jenkins `Performance Smoke Tests` stage
-- Archived reports in `devsecops-reports/`
-
-The performance report includes success rate, throughput, average latency, p95 latency, p99 latency, and max latency for health, metrics, nearby validation, language helper validation, and accommodation validation endpoints.
-
 ## Kubernetes Deployment
 
-Kubernetes work added or improved:
+Kubernetes includes:
 
-- Backend readiness and liveness probes.
-- Frontend readiness and liveness probes.
-- CPU and memory requests/limits.
-- Prometheus deployment.
-- Prometheus service exposed on NodePort `30090`.
-- Backend metrics exposed on NodePort backend service `30008`.
-- Blackbox Exporter service for internal Prometheus probes.
+- Backend deployment and service.
+- Frontend deployment and service.
+- Prometheus ConfigMap, deployment, and service.
+- Grafana Secret, ConfigMaps, deployment, and service.
+- Blackbox Exporter ConfigMap, deployment, and service.
+- Node Exporter DaemonSet and service.
+- cAdvisor DaemonSet and service.
 
 ## Jenkins Setup Checklist
 
-- Install Node.js/npm on Jenkins agent.
+- Install Node.js/npm on the Jenkins agent.
 - Install Docker and make Docker available to Jenkins.
 - Install kubectl and configure cluster access.
-- Install Ansible.
+- Install Ansible, or let the Jenkinsfile use kubectl fallback.
 - Configure SonarQube server name as `sonarqube-server`.
 - Add Jenkins credential `sonar-token`.
 - Add Jenkins credential `dockerhub-pass`.
@@ -169,11 +133,13 @@ kubectl create secret docker-registry dockerhub-secret \
 
 ## Final Verification
 
-After a successful pipeline run, verify:
+After a successful pipeline run:
 
 - Frontend opens at `http://localhost:30007`.
-- Backend health returns `200 OK` at `http://localhost:30008/api/health`.
-- Metrics return Prometheus text at `http://localhost:30008/metrics`.
+- Backend health returns `200 OK` at `http://localhost:30008/health`.
+- Backend metrics return Prometheus text at `http://localhost:30008/metrics`.
 - Prometheus opens at `http://localhost:30090`.
-- Jenkins `Postman API Smoke Tests - Newman` stage passes.
-- Jenkins `Performance Smoke Tests` stage passes and archives `devsecops-reports/performance-report.json`.
+- Grafana opens at `http://localhost:30300`.
+- Prometheus targets show backend, Blackbox Exporter, cAdvisor, and Node Exporter.
+- Jenkins archives `monitoring-health-report.txt`.
+- The pipeline has no standalone performance test stage.

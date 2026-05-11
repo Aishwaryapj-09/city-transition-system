@@ -1,7 +1,13 @@
+# Backend service.
+# NodePort 30008 is used by Jenkins, Postman/Newman, and live demos.
 apiVersion: v1
 kind: Service
 metadata:
   name: backend
+  namespace: default
+  labels:
+    app: backend
+    component: api
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/path: "/metrics"
@@ -11,7 +17,7 @@ spec:
   selector:
     app: backend
   ports:
-    - name: http            # 🔥 ADD THIS (important)
+    - name: http
       port: 5000
       targetPort: 5000
       nodePort: 30008

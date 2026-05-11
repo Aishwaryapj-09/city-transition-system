@@ -1,7 +1,14 @@
+# Blackbox Exporter configuration for Kubernetes uptime monitoring.
+# Prometheus calls Blackbox, Blackbox calls the real URL, and Grafana shows
+# probe_success, probe_duration_seconds, and probe_http_status_code.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: blackbox-config
+  namespace: default
+  labels:
+    app: blackbox-exporter
+    component: monitoring
 data:
   blackbox.yml: |
     modules:
@@ -13,10 +20,4 @@ data:
             - HTTP/1.1
             - HTTP/2.0
           follow_redirects: true
-          preferred_ip_protocol: ip4
-
-      icmp:
-        prober: icmp
-        timeout: 5s
-        icmp:
           preferred_ip_protocol: ip4

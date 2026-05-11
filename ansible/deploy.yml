@@ -11,6 +11,7 @@
       - frontend
       - prometheus
       - blackbox-exporter
+      - grafana
     rolling_image_deployments:
       - backend
       - frontend
