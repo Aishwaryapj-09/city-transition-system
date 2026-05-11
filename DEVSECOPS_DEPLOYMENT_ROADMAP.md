@@ -133,7 +133,7 @@ Performance work added:
 - `npm run perf:test`
 - `npm run perf:test:deployed`
 - Jenkins `Performance Smoke Tests` stage
-- Archived reports in `performance-results/`
+- Archived reports in `devsecops-reports/`
 
 The performance report includes success rate, throughput, average latency, p95 latency, p99 latency, and max latency for health, metrics, nearby validation, language helper validation, and accommodation validation endpoints.
 
@@ -176,4 +176,4 @@ After a successful pipeline run, verify:
 - Metrics return Prometheus text at `http://localhost:30008/metrics`.
 - Prometheus opens at `http://localhost:30090`.
 - Jenkins `Postman API Smoke Tests - Newman` stage passes.
-- Jenkins `Performance Smoke Tests` stage passes and archives `performance-results/performance-report.json`.
+- Jenkins `Performance Smoke Tests` stage passes and archives `devsecops-reports/performance-report.json`.

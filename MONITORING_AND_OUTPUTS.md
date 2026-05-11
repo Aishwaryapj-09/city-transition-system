@@ -56,6 +56,37 @@ Expected Prometheus targets:
 - `blackbox-http`
 - `blackbox-icmp`
 
+## Jenkins Report Folder
+
+All generated reports are saved in one folder:
+
+```text
+devsecops-reports/
+```
+
+Open Jenkins build, then open **Build Artifacts** to download reports such as:
+
+- `backend-eslint-report.json`
+- `frontend-eslint-report.json`
+- `nearby-unit-test-report.json`
+- `nearby-integration-test-report.json`
+- `language-helper-unit-test-report.json`
+- `language-helper-integration-test-report.json`
+- `backend-coverage-test-report.json`
+- `backend-integration-test-report.json`
+- `sonarqube-scanner-report.txt`
+- `root-npm-audit-report.json`
+- `backend-npm-audit-report.json`
+- `docker-image-report.json`
+- `deployment-report.txt`
+- `kubernetes-verification-report.txt`
+- `backend-health-report.json`
+- `prometheus-metrics-sample.txt`
+- `postman-api-smoke-report.json`
+- `postman-api-smoke-report.xml`
+- `performance-report.json`
+- `performance-summary.txt`
+
 ## Application Metrics Queries
 
 Backend up:
@@ -172,8 +203,8 @@ Performance Smoke Tests
 Artifacts archived by Jenkins:
 
 ```text
-performance-results/performance-report.json
-performance-results/performance-summary.txt
+devsecops-reports/performance-report.json
+devsecops-reports/performance-summary.txt
 ```
 
 Local deployed performance test:

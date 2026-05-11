@@ -13,7 +13,7 @@ const concurrency = Number(process.env.PERF_CONCURRENCY || 8);
 const timeoutMs = Number(process.env.PERF_TIMEOUT_MS || 10000);
 const maxP95Ms = Number(process.env.PERF_MAX_P95_MS || 2000);
 const minSuccessRate = Number(process.env.PERF_MIN_SUCCESS_RATE || 99);
-const outputDir = path.join(process.cwd(), "performance-results");
+const outputDir = path.join(process.cwd(), process.env.PERF_OUTPUT_DIR || "devsecops-reports");
 
 const endpoints = [
   {

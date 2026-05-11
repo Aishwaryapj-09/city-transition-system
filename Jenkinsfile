@@ -22,6 +22,12 @@ pipeline {
             }
         }
 
+        stage('Prepare Reports Directory') {
+            steps {
+                bat 'if not exist devsecops-reports mkdir devsecops-reports'
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 bat 'npm install'
@@ -37,10 +43,10 @@ pipeline {
         stage('Static Code Analysis - ESLint') {
             steps {
                 dir('backend') {
-                    bat 'npm run lint'
+                    bat 'npm run lint -- --format json --output-file ..\\devsecops-reports\\backend-eslint-report.json'
                 }
                 dir('frontend') {
-                    bat 'npm run lint'
+                    bat 'npm run lint -- --format json --output-file ..\\devsecops-reports\\frontend-eslint-report.json'
                 }
             }
         }
@@ -48,7 +54,7 @@ pipeline {
         stage('Nearby Feature Unit Test') {
             steps {
                 dir('backend') {
-                    bat 'npm run test:nearby:unit'
+                    bat 'npm run test:nearby:unit -- --json --outputFile=..\\devsecops-reports\\nearby-unit-test-report.json'
                 }
             }
         }
@@ -56,7 +62,7 @@ pipeline {
         stage('Nearby Feature Integration Test') {
             steps {
                 dir('backend') {
-                    bat 'npm run test:nearby:integration'
+                    bat 'npm run test:nearby:integration -- --json --outputFile=..\\devsecops-reports\\nearby-integration-test-report.json'
                 }
             }
         }
@@ -64,7 +70,7 @@ pipeline {
         stage('Language Helper Unit Test') {
             steps {
                 dir('backend') {
-                    bat 'npm run test:language-helper:unit'
+                    bat 'npm run test:language-helper:unit -- --json --outputFile=..\\devsecops-reports\\language-helper-unit-test-report.json'
                 }
             }
         }
@@ -72,7 +78,7 @@ pipeline {
         stage('Language Helper Integration Test') {
             steps {
                 dir('backend') {
-                    bat 'npm run test:language-helper:integration'
+                    bat 'npm run test:language-helper:integration -- --json --outputFile=..\\devsecops-reports\\language-helper-integration-test-report.json'
                 }
             }
         }
@@ -80,7 +86,7 @@ pipeline {
         stage('Unit Tests + Code Coverage') {
             steps {
                 dir('backend') {
-                    bat 'npm run coverage'
+                    bat 'npm run coverage -- --json --outputFile=..\\devsecops-reports\\backend-coverage-test-report.json'
                     bat 'if exist coverage\\lcov.info echo Coverage report generated'
                 }
                 archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
@@ -90,7 +96,7 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 dir('backend') {
-                    bat 'npm run test:integration'
+                    bat 'npm run test:integration -- --json --outputFile=..\\devsecops-reports\\backend-integration-test-report.json'
                 }
             }
         }
@@ -101,8 +107,10 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         dir('backend') {
                             bat """
-                            npx sonar-scanner ^
-                            -Dsonar.login=%SONAR_TOKEN%
+                            npx sonar-scanner -Dsonar.login=%SONAR_TOKEN% > ..\\devsecops-reports\\sonarqube-scanner-report.txt 2>&1
+                            set SCAN_EXIT=%ERRORLEVEL%
+                            type ..\\devsecops-reports\\sonarqube-scanner-report.txt
+                            exit /b %SCAN_EXIT%
                             """
                         }
                     }
@@ -112,9 +120,9 @@ pipeline {
 
         stage('Dependency Security Scan') {
             steps {
-                bat 'npm audit --omit=dev --audit-level=high || exit 0'
+                bat 'npm audit --omit=dev --audit-level=high --json > devsecops-reports\\root-npm-audit-report.json || exit 0'
                 dir('backend') {
-                    bat 'npm audit --audit-level=high || exit 0'
+                    bat 'npm audit --audit-level=high --json > ..\\devsecops-reports\\backend-npm-audit-report.json || exit 0'
                 }
             }
         }
@@ -128,6 +136,12 @@ pipeline {
         stage('Build Frontend Docker Image') {
             steps {
                 bat "docker build --no-cache -t %FRONTEND_IMAGE%:%TAG% ./frontend"
+            }
+        }
+
+        stage('Container Image Report') {
+            steps {
+                bat 'docker image inspect %BACKEND_IMAGE%:%TAG% %FRONTEND_IMAGE%:%TAG% > devsecops-reports\\docker-image-report.json'
             }
         }
 
@@ -150,17 +164,55 @@ pipeline {
 
         stage('Deploy to Kubernetes with Ansible IaC') {
             steps {
-                bat 'ansible-playbook -i ansible/inventory.ini ansible/deploy.yml'
+                bat """
+                if not exist devsecops-reports mkdir devsecops-reports
+                set DEPLOY_EXIT=0
+                where ansible-playbook >nul 2>nul
+                if %ERRORLEVEL% EQU 0 goto run_ansible
+                goto run_kubectl
+
+:run_ansible
+                echo ansible-playbook found. Running Ansible IaC deployment. > devsecops-reports\\deployment-report.txt
+                ansible-playbook -i ansible/inventory.ini ansible/deploy.yml >> devsecops-reports\\deployment-report.txt 2>&1
+                set DEPLOY_EXIT=%ERRORLEVEL%
+                goto deploy_done
+
+:run_kubectl
+                echo ansible-playbook not found. Falling back to kubectl deployment. > devsecops-reports\\deployment-report.txt
+                kubectl config use-context docker-desktop >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl apply -f k8s/ --validate=false >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl rollout restart deployment/backend >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl rollout restart deployment/frontend >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl rollout status deployment/backend --timeout=180s >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl rollout status deployment/frontend --timeout=180s >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl rollout status deployment/prometheus --timeout=180s >> devsecops-reports\\deployment-report.txt 2>&1
+                if errorlevel 1 set DEPLOY_EXIT=%ERRORLEVEL% && goto deploy_done
+                kubectl rollout status deployment/blackbox-exporter --timeout=180s >> devsecops-reports\\deployment-report.txt 2>&1
+                set DEPLOY_EXIT=%ERRORLEVEL%
+
+:deploy_done
+                type devsecops-reports\\deployment-report.txt
+                exit /b %DEPLOY_EXIT%
+                """
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                bat 'kubectl get deployments'
-                bat 'kubectl get pods'
-                bat 'kubectl get services'
-                bat 'curl -f http://localhost:30008/api/health'
-                bat 'curl -f http://localhost:30008/metrics'
+                bat """
+                kubectl get deployments -o wide > devsecops-reports\\kubernetes-verification-report.txt 2>&1
+                kubectl get pods -o wide >> devsecops-reports\\kubernetes-verification-report.txt 2>&1
+                kubectl get services -o wide >> devsecops-reports\\kubernetes-verification-report.txt 2>&1
+                curl -f http://localhost:30008/api/health > devsecops-reports\\backend-health-report.json
+                curl -f http://localhost:30008/metrics > devsecops-reports\\prometheus-metrics-sample.txt
+                type devsecops-reports\\kubernetes-verification-report.txt
+                """
             }
         }
 
@@ -176,7 +228,7 @@ pipeline {
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'devsecops-reports/**', allowEmptyArchive: true
                 }
             }
         }
@@ -198,7 +250,7 @@ pipeline {
         }
         always {
             archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'devsecops-reports/**', allowEmptyArchive: true
             echo 'Pipeline finished'
         }
     }

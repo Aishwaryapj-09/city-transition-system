@@ -36,6 +36,8 @@ The Jenkins pipeline now runs a continuous deployment flow:
 11. Run Postman/Newman API smoke tests against the deployed backend.
 12. Run performance smoke tests and archive latency/throughput reports.
 
+All generated reports are archived from `devsecops-reports/`.
+
 ## Deployment Endpoints
 
 After Kubernetes deployment:

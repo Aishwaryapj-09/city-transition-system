@@ -4,6 +4,7 @@ node_modules/
 # Coverage
 coverage/
 performance-results/
+devsecops-reports/
 
 # Build
 build/
