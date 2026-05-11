@@ -71,6 +71,13 @@ data:
         static_configs:
           - targets:
               - http://backend:5000/health
+              - http://backend:5000/api/health
+              - "http://backend:5000/api/listings"
+              - "http://backend:5000/api/listings/search?location=Electronic%20City"
+              - "http://backend:5000/api/accommodation?location=12.9716,77.5946"
+              - "http://backend:5000/api/accommodation/search?location=Electronic%20City"
+              - "http://backend:5000/api/nearby?lat=12.9716&lng=77.5946&type=hospital&radius=1000"
+              - "http://backend:5000/api/language-helper?place=Electronic%20City"
               - http://backend:5000/metrics
               - http://frontend-service:80
             labels:

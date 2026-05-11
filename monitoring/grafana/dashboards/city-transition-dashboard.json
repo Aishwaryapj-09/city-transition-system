@@ -594,7 +594,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "HTTP uptime probes for frontend, backend health, and backend metrics endpoints.",
+      "description": "HTTP uptime probes for frontend, backend health, metrics, and public API endpoints.",
       "fieldConfig": {
         "defaults": {
           "max": 1,
@@ -631,7 +631,7 @@
           "refId": "A"
         }
       ],
-      "title": "Uptime Probes",
+      "title": "All Endpoint Uptime Probes",
       "type": "timeseries"
     },
     {

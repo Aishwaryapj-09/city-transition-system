@@ -37,7 +37,9 @@ The Jenkins pipeline runs:
 9. Deploy Kubernetes manifests through Ansible IaC or kubectl fallback.
 10. Verify Kubernetes workloads, backend health, and backend metrics.
 11. Run Postman/Newman smoke tests against the deployed backend.
-12. Verify Prometheus and Grafana monitoring health.
+12. Call all public demo endpoints and save endpoint-wise monitoring evidence.
+13. Verify Prometheus and Grafana monitoring health.
+14. Generate a visual HTML DevSecOps evidence dashboard.
 
 Standalone performance testing with k6 or custom scripts has been removed.
 Application performance is monitored continuously through Prometheus and Grafana.
@@ -77,6 +79,15 @@ Password: admin
 
 See `MONITORING_AND_OUTPUTS.md` for Prometheus queries, Grafana panels,
 architecture explanation, Docker setup, Kubernetes setup, and viva notes.
+
+Human-readable Jenkins report:
+
+```text
+devsecops-reports/devsecops-dashboard.html
+```
+
+This report is the easiest viva output because it shows CI/CD, security,
+testing, deployment, endpoint checks, and Prometheus evidence in one visual page.
 
 ## Run Locally with Docker Monitoring
 

@@ -36,6 +36,8 @@ Explanation:
 - cAdvisor shows container CPU and memory usage.
 - Node Exporter shows Kubernetes node CPU, memory, disk, and network usage.
 - Jenkins deploys the stack and verifies monitoring health without load tests.
+- Jenkins saves a human-readable HTML report at
+  `devsecops-reports/devsecops-dashboard.html`.
 
 ## Main Metrics Only
 
@@ -63,6 +65,15 @@ The setup focuses on metrics that are easy to explain in a viva:
   `probe_success`, `probe_duration_seconds`
 - Kubernetes pod health:
   `kubectl get pods`, readiness probes, liveness probes
+
+Important:
+
+- Prometheus scrapes the backend once at `/metrics`.
+- The `/metrics` output contains route labels for all endpoints that receive
+  traffic, such as `/api/listings`, `/api/accommodation`, `/api/nearby`, and
+  `/api/language-helper`.
+- Blackbox Exporter separately probes each public demo endpoint so Grafana can
+  show endpoint-wise uptime, not only `/health`.
 
 ## Prometheus Queries
 
@@ -172,6 +183,7 @@ Grafana is auto-provisioned with:
 - City Transition System dashboard
 - Panels for health, uptime, throughput, response time, latency, error rate,
   backend CPU, backend memory, container CPU, container memory, and uptime probes
+- Endpoint-wise Blackbox probe panels for the main public backend APIs
 
 Docker URL:
 
@@ -306,6 +318,39 @@ Jenkins monitoring artifacts:
 - `devsecops-reports/prometheus-metrics-sample.txt`
 - `devsecops-reports/prometheus-metrics-snapshot.txt`
 - `devsecops-reports/monitoring-health-report.txt`
+- `devsecops-reports/endpoint-evidence.html`
+- `devsecops-reports/endpoint-evidence.json`
+- `devsecops-reports/prometheus-query-evidence.json`
+- `devsecops-reports/devsecops-dashboard.html`
+- `devsecops-reports/devsecops-summary.md`
+
+## Visual Report
+
+Jenkins generates a browser-friendly report:
+
+```text
+devsecops-reports/devsecops-dashboard.html
+```
+
+Open it from Jenkins build artifacts. It shows:
+
+- DevSecOps concept status cards
+- Static analysis evidence
+- Test and coverage evidence
+- Security scan evidence
+- Docker image evidence
+- Kubernetes deployment evidence
+- Endpoint-wise API evidence
+- Prometheus query evidence
+- Links to saved raw artifacts
+
+Endpoint evidence is also saved separately:
+
+```text
+devsecops-reports/endpoint-evidence.html
+devsecops-reports/endpoint-evidence.json
+devsecops-reports/endpoint-responses/
+```
 
 ## Viva-Ready Explanations
 

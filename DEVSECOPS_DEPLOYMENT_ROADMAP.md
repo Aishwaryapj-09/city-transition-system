@@ -23,7 +23,9 @@ college viva.
 10. Kubernetes deploys the app and monitoring stack.
 11. Jenkins verifies `/health` and `/metrics`.
 12. Jenkins runs Postman/Newman API smoke tests.
-13. Jenkins checks Prometheus and Grafana monitoring health.
+13. Jenkins calls all public demo endpoints to create route-wise monitoring data.
+14. Jenkins checks Prometheus and Grafana monitoring health.
+15. Jenkins generates `devsecops-reports/devsecops-dashboard.html`.
 
 There is no k6 stage and no custom `performance-test.js` stage.
 
@@ -48,6 +50,9 @@ There is no k6 stage and no custom `performance-test.js` stage.
 - Prometheus deployment and scrape configuration.
 - Grafana datasource and dashboard provisioning.
 - Blackbox Exporter for uptime checks.
+- Blackbox endpoint probes for `/health`, `/api/health`, `/api/listings`,
+  `/api/accommodation`, `/api/nearby`, `/api/language-helper`, `/metrics`,
+  and the frontend.
 - cAdvisor for container resource monitoring.
 - Node Exporter for infrastructure monitoring.
 - Kubernetes readiness and liveness probes.
@@ -142,4 +147,5 @@ After a successful pipeline run:
 - Grafana opens at `http://localhost:30300`.
 - Prometheus targets show backend, Blackbox Exporter, cAdvisor, and Node Exporter.
 - Jenkins archives `monitoring-health-report.txt`.
+- Jenkins archives `devsecops-dashboard.html` for a visual report.
 - The pipeline has no standalone performance test stage.

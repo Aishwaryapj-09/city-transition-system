@@ -150,7 +150,7 @@ data:
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "description": "HTTP uptime and endpoint latency from Blackbox Exporter.",
+          "description": "HTTP uptime and endpoint latency for frontend, health, metrics, and public API endpoints from Blackbox Exporter.",
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
           "id": 8,
@@ -159,7 +159,7 @@ data:
             { "expr": "probe_success{job=\"blackbox-http\"}", "legendFormat": "{{instance}} up", "refId": "A" },
             { "expr": "probe_duration_seconds{job=\"blackbox-http\"}", "legendFormat": "{{instance}} latency", "refId": "B" }
           ],
-          "title": "Uptime and Probe Latency",
+          "title": "All Endpoint Uptime and Probe Latency",
           "type": "timeseries"
         }
       ],

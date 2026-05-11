@@ -5,7 +5,7 @@
 // Important monitoring decision:
 // - Old custom performance-test.js and k6 load-test stages are removed.
 // - Application performance is observed continuously with Prometheus + Grafana.
-// - Jenkins only verifies that /health, /metrics, Prometheus, and Grafana exist.
+// - Jenkins verifies all public demo endpoints, /metrics, Prometheus, and Grafana.
 // ============================================================
 
 pipeline {
@@ -254,6 +254,14 @@ pipeline {
             }
         }
 
+        stage('Endpoint Monitoring Evidence') {
+            steps {
+                // Calls every public demo endpoint once.
+                // This creates route-wise Prometheus metrics and saves visual evidence.
+                bat 'npm run reports:endpoints'
+            }
+        }
+
         stage('Prometheus and Grafana Monitoring Check') {
             steps {
                 // This replaces the removed performance-test.js and k6 stages.
@@ -301,11 +309,35 @@ pipeline {
                   && echo [OK] CPU metric present >> devsecops-reports\\monitoring-health-report.txt ^
                   || echo [WARN] CPU metric missing >> devsecops-reports\\monitoring-health-report.txt
 
+                findstr /C:"/api/listings" devsecops-reports\\prometheus-metrics-snapshot.txt > nul 2>&1 ^
+                  && echo [OK] /api/listings route metrics present >> devsecops-reports\\monitoring-health-report.txt ^
+                  || echo [WARN] /api/listings route metrics missing >> devsecops-reports\\monitoring-health-report.txt
+
+                findstr /C:"/api/accommodation" devsecops-reports\\prometheus-metrics-snapshot.txt > nul 2>&1 ^
+                  && echo [OK] /api/accommodation route metrics present >> devsecops-reports\\monitoring-health-report.txt ^
+                  || echo [WARN] /api/accommodation route metrics missing >> devsecops-reports\\monitoring-health-report.txt
+
+                findstr /C:"/api/nearby" devsecops-reports\\prometheus-metrics-snapshot.txt > nul 2>&1 ^
+                  && echo [OK] /api/nearby route metrics present >> devsecops-reports\\monitoring-health-report.txt ^
+                  || echo [WARN] /api/nearby route metrics missing >> devsecops-reports\\monitoring-health-report.txt
+
+                findstr /C:"/api/language-helper" devsecops-reports\\prometheus-metrics-snapshot.txt > nul 2>&1 ^
+                  && echo [OK] /api/language-helper route metrics present >> devsecops-reports\\monitoring-health-report.txt ^
+                  || echo [WARN] /api/language-helper route metrics missing >> devsecops-reports\\monitoring-health-report.txt
+
                 echo. >> devsecops-reports\\monitoring-health-report.txt
                 echo Full performance visibility is now continuous in Grafana. >> devsecops-reports\\monitoring-health-report.txt
                 echo Jenkins no longer fails due to standalone performance scripts. >> devsecops-reports\\monitoring-health-report.txt
                 type devsecops-reports\\monitoring-health-report.txt
                 """
+            }
+        }
+
+        stage('Generate Visual DevSecOps Report') {
+            steps {
+                // Final human-readable report for viva/demo:
+                // devsecops-reports/devsecops-dashboard.html
+                bat 'npm run reports:dashboard'
             }
         }
 
@@ -330,8 +362,10 @@ pipeline {
                 echo " - Kubernetes pod health"
                 echo " - Container CPU and memory via cAdvisor"
                 echo " - Node CPU and memory via Node Exporter"
+                echo " - Endpoint-wise uptime for all public demo APIs"
                 echo "------------------------------------------------------"
                 echo " Removed: custom performance-test.js and k6 stages"
+                echo " Visual report: devsecops-reports/devsecops-dashboard.html"
                 echo " Result : CI/CD succeeds without standalone performance testing"
                 echo "======================================================"
             }
