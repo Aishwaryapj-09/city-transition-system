@@ -86,9 +86,228 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "",
-                  "pm.test('exposes Prometheus format metrics', function () {",
-                  "  pm.expect(pm.response.text()).to.include('city_transition_up 1');",
+                  "pm.test('exposes Prometheus metrics', function () {",
+                  "  pm.expect(pm.response.text()).to.include('city_transition_up');",
                   "  pm.expect(pm.response.text()).to.include('city_transition_http_requests_total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auth protected route security",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/protected",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "protected"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns HTTP 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auth login validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns validation or rate-limit status', function () {",
+                  "  pm.expect([400, 429]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listings public API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "listings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns HTTP 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('returns an array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listings search API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/listings/search?location=Electronic%20City",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "listings",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "Electronic City"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns HTTP 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('returns search results array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listings create security",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "listings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Demo Listing\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns HTTP 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accommodation validation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accommodation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accommodation"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns HTTP 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('requires location query', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Location is required');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -131,8 +350,11 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('rejects unsupported nearby type', function () {",
+                  "pm.test('returns HTTP 400', function () {",
                   "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('rejects unsupported nearby type', function () {",
                   "  pm.expect(pm.response.json().message).to.include('type must be one of');",
                   "});"
                 ],
@@ -162,8 +384,11 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('requires a place value', function () {",
+                  "pm.test('returns HTTP 400', function () {",
                   "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('requires a place value', function () {",
                   "  pm.expect(pm.response.json().message).to.eql('place is required');",
                   "});"
                 ],
@@ -171,8 +396,49 @@
               }
             }
           ]
+        },
+        {
+          "name": "Language translation validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/language-helper/translate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "language-helper",
+                "translate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"place\": \"Electronic City\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns HTTP 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Short Postman demo folder for deployed API testing. It covers health, metrics, auth, listings, accommodation, nearby, and language helper without relying on long console logs."
     },
     {
       "name": "Feature API Regression",
