@@ -78,8 +78,20 @@ function main() {
   const eslintBackend  = P.parseEslintReport(p('backend-eslint-report.json'), 'backend');
   const eslintFrontend = P.parseEslintReport(p('frontend-eslint-report.json'), 'frontend');
 
-  // Coverage
-  const coverage = P.parseLcov(path.resolve('backend', 'coverage', 'lcov.info'));
+  // Coverage — try several locations because Jest/Jenkins working dirs vary.
+  const coverage = (() => {
+    const candidates = [
+      p('lcov.info'),
+      path.resolve('backend', 'coverage', 'lcov.info'),
+      path.resolve('coverage', 'lcov.info'),
+      path.resolve('backend', 'coverage', 'lcov', 'lcov.info'),
+    ];
+    for (const c of candidates) {
+      const parsed = P.parseLcov(c);
+      if (parsed && parsed.available) return parsed;
+    }
+    return P.parseLcov(candidates[0]); // returns a "no data" shape
+  })();
 
   // Newman
   const newmanLocal     = P.parseNewmanReport(p('postman-api-smoke-local-report.json'));
