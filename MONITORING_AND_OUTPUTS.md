@@ -294,14 +294,12 @@ ESLint
 Unit and integration tests
 Coverage
 SonarQube
-npm audit
-Docker build
-Docker push
-Kubernetes deployment with Ansible or kubectl fallback
+Build and publish deployment images
+Deployment with Ansible IaC or fallback
 Deployment verification
 Postman/Newman smoke tests
 Prometheus and Grafana monitoring check
-Pipeline summary
+Concept-wise report generation
 ```
 
 Removed from Jenkins:
@@ -321,6 +319,16 @@ Jenkins monitoring artifacts:
 - `devsecops-reports/endpoint-evidence.html`
 - `devsecops-reports/endpoint-evidence.json`
 - `devsecops-reports/prometheus-query-evidence.json`
+- `devsecops-reports/00-devsecops-demo-index.html`
+- `devsecops-reports/01-static-code-analysis-report.html`
+- `devsecops-reports/02-unit-testing-report.html`
+- `devsecops-reports/03-integration-testing-report.html`
+- `devsecops-reports/04-code-coverage-testing-report.html`
+- `devsecops-reports/05-postman-api-testing-report.html`
+- `devsecops-reports/06-prometheus-monitoring-report.html`
+- `devsecops-reports/07-grafana-performance-testing-report.html`
+- `devsecops-reports/08-ansible-iac-report.html`
+- `devsecops-reports/09-deployment-flow-report.html`
 - `devsecops-reports/devsecops-dashboard.html`
 - `devsecops-reports/devsecops-summary.md`
 
@@ -329,20 +337,21 @@ Jenkins monitoring artifacts:
 Jenkins generates a browser-friendly report:
 
 ```text
-devsecops-reports/devsecops-dashboard.html
+devsecops-reports/00-devsecops-demo-index.html
 ```
 
 Open it from Jenkins build artifacts. It shows:
 
-- DevSecOps concept status cards
-- Static analysis evidence
-- Test and coverage evidence
-- Security scan evidence
-- Docker image evidence
-- Kubernetes deployment evidence
-- Endpoint-wise API evidence
-- Prometheus query evidence
-- Links to saved raw artifacts
+- Static code analysis evidence
+- Unit testing evidence
+- Integration testing evidence
+- Code coverage evidence
+- Postman API testing evidence
+- Prometheus route-wise monitoring evidence
+- Grafana performance graphs for separate API families
+- Ansible IaC evidence
+- Deployment flow evidence
+- Links to saved raw artifacts without long console output
 
 Endpoint evidence is also saved separately:
 

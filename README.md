@@ -18,7 +18,7 @@ moving to a new city.
 - Frontend: React, Axios, React Router.
 - Backend: Node.js, Express.js, MongoDB, Mongoose.
 - Testing: Jest, Supertest, Postman collection, Newman.
-- Security: bcrypt, JWT, Helmet, express-rate-limit, npm audit, SonarQube.
+- Security: bcrypt, JWT, Helmet, express-rate-limit, SonarQube.
 - DevOps: Jenkins, Docker, Docker Hub, Kubernetes, Ansible IaC.
 - Monitoring: Prometheus, Grafana, Blackbox Exporter, cAdvisor, Node Exporter.
 
@@ -31,15 +31,13 @@ The Jenkins pipeline runs:
 3. Run ESLint.
 4. Run unit tests, integration tests, and coverage.
 5. Run SonarQube static analysis.
-6. Run npm dependency security checks.
-7. Build backend and frontend Docker images.
-8. Push Docker images to Docker Hub.
-9. Deploy Kubernetes manifests through Ansible IaC or kubectl fallback.
-10. Verify Kubernetes workloads, backend health, and backend metrics.
-11. Run Postman/Newman smoke tests against the deployed backend.
-12. Call all public demo endpoints and save endpoint-wise monitoring evidence.
-13. Verify Prometheus and Grafana monitoring health.
-14. Generate a visual HTML DevSecOps evidence dashboard.
+6. Build and publish deployment images.
+7. Deploy through Ansible IaC or deployment fallback.
+8. Verify deployed services, backend health, and backend metrics.
+9. Run Postman/Newman smoke tests against the deployed backend.
+10. Call API routes and save endpoint-wise monitoring evidence.
+11. Verify Prometheus and Grafana monitoring health.
+12. Generate visual concept-wise DevSecOps reports.
 
 Standalone performance testing with k6 or custom scripts has been removed.
 Application performance is monitored continuously through Prometheus and Grafana.
@@ -80,14 +78,25 @@ Password: admin
 See `MONITORING_AND_OUTPUTS.md` for Prometheus queries, Grafana panels,
 architecture explanation, Docker setup, Kubernetes setup, and viva notes.
 
-Human-readable Jenkins report:
+Human-readable Jenkins reports:
 
 ```text
-devsecops-reports/devsecops-dashboard.html
+devsecops-reports/00-devsecops-demo-index.html
+devsecops-reports/01-static-code-analysis-report.html
+devsecops-reports/02-unit-testing-report.html
+devsecops-reports/03-integration-testing-report.html
+devsecops-reports/04-code-coverage-testing-report.html
+devsecops-reports/05-postman-api-testing-report.html
+devsecops-reports/06-prometheus-monitoring-report.html
+devsecops-reports/07-grafana-performance-testing-report.html
+devsecops-reports/08-ansible-iac-report.html
+devsecops-reports/09-deployment-flow-report.html
 ```
 
-This report is the easiest viva output because it shows CI/CD, security,
-testing, deployment, endpoint checks, and Prometheus evidence in one visual page.
+These reports are the easiest viva output because they stay focused on static
+code analysis, unit tests, integration tests, code coverage, Postman API
+testing, Prometheus monitoring, Grafana performance graphs, Ansible IaC, and
+deployment flow.
 
 ## Run Locally with Docker Monitoring
 

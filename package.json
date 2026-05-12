@@ -6,11 +6,12 @@
     "preapi:test": "npm run reports:prepare --silent",
     "preapi:test:smoke": "npm run reports:prepare --silent",
     "preapi:test:deployed": "npm run reports:prepare --silent",
-    "api:test": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --reporters cli,json,junit --reporter-json-export devsecops-reports/postman-api-full-report.json --reporter-junit-export devsecops-reports/postman-api-full-report.xml",
-    "api:test:smoke": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --folder \"CD Smoke\" --reporters cli,json,junit --reporter-json-export devsecops-reports/postman-api-smoke-local-report.json --reporter-junit-export devsecops-reports/postman-api-smoke-local-report.xml",
-    "api:test:deployed": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --folder \"CD Smoke\" --env-var baseUrl=http://localhost:30008 --reporters cli,json,junit --reporter-json-export devsecops-reports/postman-api-smoke-report.json --reporter-junit-export devsecops-reports/postman-api-smoke-report.xml",
+    "api:test": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --reporters json,junit --reporter-json-export devsecops-reports/postman-api-full-report.json --reporter-junit-export devsecops-reports/postman-api-full-report.xml",
+    "api:test:smoke": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --folder \"CD Smoke\" --reporters json,junit --reporter-json-export devsecops-reports/postman-api-smoke-local-report.json --reporter-junit-export devsecops-reports/postman-api-smoke-local-report.xml",
+    "api:test:deployed": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --folder \"CD Smoke\" --env-var baseUrl=http://localhost:30008 --reporters json,junit --reporter-json-export devsecops-reports/postman-api-smoke-report.json --reporter-junit-export devsecops-reports/postman-api-smoke-report.xml",
     "reports:dashboard": "node tools/devsecops-dashboard.js",
-    "reports:endpoints": "node tools/devsecops-dashboard.js --collect-only"
+    "reports:endpoints": "node tools/devsecops-dashboard.js --collect-only",
+    "reports:zip": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package-devsecops-reports.ps1"
   },
   "devDependencies": {
     "newman": "^6.2.1",

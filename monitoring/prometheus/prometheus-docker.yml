@@ -41,12 +41,16 @@ scrape_configs:
     metrics_path: /probe
     params:
       module:
-        - http_2xx
+        - http_api_expected
     static_configs:
       - targets:
           - http://backend:5000/health
           - http://backend:5000/api/health
+          - http://backend:5000/api/auth/protected
+          - http://backend:5000/api/auth/admin
           - "http://backend:5000/api/listings"
+          - "http://backend:5000/api/listings/my"
+          - "http://backend:5000/api/listings/pending"
           - "http://backend:5000/api/listings/search?location=Electronic%20City"
           - "http://backend:5000/api/accommodation?location=12.9716,77.5946"
           - "http://backend:5000/api/accommodation/search?location=Electronic%20City"

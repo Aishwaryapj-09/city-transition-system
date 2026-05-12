@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "City Transition System application performance, availability, and container monitoring from Prometheus.",
+  "description": "City Transition System Grafana performance dashboard with separate graphs for each API family.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -27,37 +27,27 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Shows whether the backend process is alive. 1 means up.",
+      "description": "1 means the backend process is alive.",
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "DOWN"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "UP"
-                }
-              },
-              "type": "value"
-            }
-          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "green",
+                "color": "orange",
                 "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
               }
             ]
           }
@@ -72,8 +62,8 @@
       },
       "id": 1,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
+        "colorMode": "value",
+        "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
@@ -89,7 +79,7 @@
       "targets": [
         {
           "expr": "city_transition_up",
-          "legendFormat": "backend",
+          "legendFormat": "Backend Health",
           "refId": "A"
         }
       ],
@@ -101,10 +91,30 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Backend uptime in seconds from the Node.js process.",
+      "description": "Backend process uptime in seconds.",
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -133,7 +143,7 @@
       "targets": [
         {
           "expr": "city_transition_process_uptime_seconds",
-          "legendFormat": "uptime",
+          "legendFormat": "Application Uptime",
           "refId": "A"
         }
       ],
@@ -145,10 +155,30 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Requests per second calculated from the total request counter.",
+      "description": "Total requests per second across all APIs.",
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "reqps",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -177,11 +207,11 @@
       "targets": [
         {
           "expr": "sum(rate(city_transition_http_requests_total[1m]))",
-          "legendFormat": "requests/sec",
+          "legendFormat": "Total API Throughput",
           "refId": "A"
         }
       ],
-      "title": "Throughput",
+      "title": "Total API Throughput",
       "type": "stat"
     },
     {
@@ -189,11 +219,13 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Percent of requests that returned HTTP 4xx or 5xx.",
+      "description": "Percent of requests returning 4xx or 5xx.",
       "fieldConfig": {
         "defaults": {
-          "max": 100,
-          "min": 0,
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -210,8 +242,7 @@
                 "value": 5
               }
             ]
-          },
-          "unit": "percent"
+          }
         },
         "overrides": []
       },
@@ -240,11 +271,11 @@
       "targets": [
         {
           "expr": "100 * sum(rate(city_transition_http_errors_total[5m])) / clamp_min(sum(rate(city_transition_http_requests_total[5m])), 1)",
-          "legendFormat": "error %",
+          "legendFormat": "Total Error Rate",
           "refId": "A"
         }
       ],
-      "title": "Error Rate",
+      "title": "Total Error Rate",
       "type": "stat"
     },
     {
@@ -252,7 +283,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "p95 latency by route from the Prometheus histogram.",
+      "description": "p95 response time for Health API. This is the Grafana performance graph for this API family.",
       "fieldConfig": {
         "defaults": {
           "unit": "s"
@@ -276,18 +307,18 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket[5m])) by (le, route))",
-          "legendFormat": "{{route}} p95",
+          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket{route=~\"/health|/api/health\"}[5m])) by (le, method, route))",
+          "legendFormat": "{{method}} {{route}} p95",
           "refId": "A"
         }
       ],
-      "title": "API Response Time p95",
+      "title": "Health API Response Time p95",
       "type": "timeseries"
     },
     {
@@ -295,10 +326,10 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Average request latency by route.",
+      "description": "Request throughput and failed-response trend for Health API.",
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "reqps"
         },
         "overrides": []
       },
@@ -319,18 +350,23 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
-          "expr": "sum(rate(city_transition_http_request_duration_seconds_sum[5m])) by (route) / sum(rate(city_transition_http_request_duration_seconds_count[5m])) by (route)",
-          "legendFormat": "{{route}} average",
+          "expr": "sum(rate(city_transition_http_requests_total{route=~\"/health|/api/health\"}[1m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} req/s",
           "refId": "A"
+        },
+        {
+          "expr": "sum(rate(city_transition_http_errors_total{route=~\"/health|/api/health\"}[5m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} errors/s",
+          "refId": "B"
         }
       ],
-      "title": "Application Latency",
+      "title": "Health API Throughput and Errors",
       "type": "timeseries"
     },
     {
@@ -338,10 +374,10 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Request throughput grouped by API route.",
+      "description": "p95 response time for Auth API. This is the Grafana performance graph for this API family.",
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -362,18 +398,18 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
-          "expr": "sum(rate(city_transition_http_requests_total[1m])) by (route)",
-          "legendFormat": "{{route}}",
+          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket{route=~\"/api/auth/.*\"}[5m])) by (le, method, route))",
+          "legendFormat": "{{method}} {{route}} p95",
           "refId": "A"
         }
       ],
-      "title": "Request Throughput by Route",
+      "title": "Auth API Response Time p95",
       "type": "timeseries"
     },
     {
@@ -381,9 +417,11 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "HTTP request count grouped by route and status code.",
+      "description": "Request throughput and failed-response trend for Auth API.",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "reqps"
+        },
         "overrides": []
       },
       "gridPos": {
@@ -393,6 +431,416 @@
         "y": 12
       },
       "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(city_transition_http_requests_total{route=~\"/api/auth/.*\"}[1m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(city_transition_http_errors_total{route=~\"/api/auth/.*\"}[5m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} errors/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Auth API Throughput and Errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "p95 response time for Listings API. This is the Grafana performance graph for this API family.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket{route=~\"/api/listings.*\"}[5m])) by (le, method, route))",
+          "legendFormat": "{{method}} {{route}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Listings API Response Time p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Request throughput and failed-response trend for Listings API.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(city_transition_http_requests_total{route=~\"/api/listings.*\"}[1m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(city_transition_http_errors_total{route=~\"/api/listings.*\"}[5m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} errors/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Listings API Throughput and Errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "p95 response time for Accommodation API. This is the Grafana performance graph for this API family.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket{route=~\"/api/accommodation.*\"}[5m])) by (le, method, route))",
+          "legendFormat": "{{method}} {{route}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Accommodation API Response Time p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Request throughput and failed-response trend for Accommodation API.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(city_transition_http_requests_total{route=~\"/api/accommodation.*\"}[1m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(city_transition_http_errors_total{route=~\"/api/accommodation.*\"}[5m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} errors/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Accommodation API Throughput and Errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "p95 response time for Nearby API. This is the Grafana performance graph for this API family.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket{route=~\"/api/nearby\"}[5m])) by (le, method, route))",
+          "legendFormat": "{{method}} {{route}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Nearby API Response Time p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Request throughput and failed-response trend for Nearby API.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(city_transition_http_requests_total{route=~\"/api/nearby\"}[1m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(city_transition_http_errors_total{route=~\"/api/nearby\"}[5m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} errors/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Nearby API Throughput and Errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "p95 response time for Language Helper API. This is the Grafana performance graph for this API family.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 44
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(city_transition_http_request_duration_seconds_bucket{route=~\"/api/language-helper.*\"}[5m])) by (le, method, route))",
+          "legendFormat": "{{method}} {{route}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Language Helper API Response Time p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Request throughput and failed-response trend for Language Helper API.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 44
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(city_transition_http_requests_total{route=~\"/api/language-helper.*\"}[1m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(city_transition_http_errors_total{route=~\"/api/language-helper.*\"}[5m])) by (method, route, status_code)",
+          "legendFormat": "{{method}} {{route}} {{status_code}} errors/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Language Helper API Throughput and Errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Saved count of requests by method, route, and status code. Use this to show each API endpoint was hit.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 52
+      },
+      "id": 17,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -407,14 +855,14 @@
       },
       "targets": [
         {
-          "expr": "sum(city_transition_http_requests_total) by (route, status_code)",
+          "expr": "sum(city_transition_http_requests_total) by (method, route, status_code)",
           "format": "table",
           "instant": true,
-          "legendFormat": "{{route}} {{status_code}}",
+          "legendFormat": "{{method}} {{route}} {{status_code}}",
           "refId": "A"
         }
       ],
-      "title": "HTTP Request Count",
+      "title": "API Request Count by Route",
       "type": "table"
     },
     {
@@ -422,7 +870,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Backend process CPU usage from prom-client default metrics.",
+      "description": "Backend CPU usage from Node.js process metrics.",
       "fieldConfig": {
         "defaults": {
           "unit": "cores"
@@ -432,10 +880,10 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 20
+        "x": 12,
+        "y": 52
       },
-      "id": 9,
+      "id": 18,
       "options": {
         "legend": {
           "calcs": [
@@ -465,7 +913,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Backend process memory usage from prom-client default metrics.",
+      "description": "Backend memory usage from Node.js process metrics.",
       "fieldConfig": {
         "defaults": {
           "unit": "bytes"
@@ -475,10 +923,10 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 20
+        "x": 0,
+        "y": 60
       },
-      "id": 10,
+      "id": 19,
       "options": {
         "legend": {
           "calcs": [
@@ -508,93 +956,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Container CPU usage from cAdvisor.",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "cores"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 28
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m])) by (name)",
-          "legendFormat": "{{name}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Container CPU Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "Container memory usage from cAdvisor.",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 28
-      },
-      "id": 12,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum(container_memory_usage_bytes{image!=\"\"}) by (name)",
-          "legendFormat": "{{name}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Container Memory Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "HTTP uptime probes for frontend, backend health, metrics, and public API endpoints.",
+      "description": "Endpoint health probes for the frontend, backend health, and public API URLs.",
       "fieldConfig": {
         "defaults": {
           "max": 1,
@@ -606,10 +968,10 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 36
+        "x": 12,
+        "y": 60
       },
-      "id": 13,
+      "id": 20,
       "options": {
         "legend": {
           "calcs": [
@@ -627,54 +989,16 @@
       "targets": [
         {
           "expr": "probe_success{job=\"blackbox-http\"}",
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{instance}} up",
           "refId": "A"
-        }
-      ],
-      "title": "All Endpoint Uptime Probes",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "End-to-end HTTP probe duration from Blackbox Exporter.",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 36
-      },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
         {
           "expr": "probe_duration_seconds{job=\"blackbox-http\"}",
-          "legendFormat": "{{instance}}",
-          "refId": "A"
+          "legendFormat": "{{instance}} latency",
+          "refId": "B"
         }
       ],
-      "title": "Endpoint Probe Latency",
+      "title": "Endpoint Health and Probe Latency",
       "type": "timeseries"
     }
   ],
@@ -697,6 +1021,6 @@
   "timezone": "browser",
   "title": "City Transition System - DevSecOps Monitoring",
   "uid": "city-transition-monitoring",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

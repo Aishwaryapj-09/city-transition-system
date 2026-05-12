@@ -2,7 +2,30 @@
 # Prometheus asks Blackbox to call a real URL, then stores probe_success,
 # probe_duration_seconds, and probe_http_status_code.
 modules:
-  # http_2xx means the endpoint is considered healthy only when it returns 2xx.
+  # http_api_expected marks the endpoint healthy when it returns a normal demo
+  # status. Public endpoints return 2xx; protected routes can return 401; input
+  # validation routes can return 400. A 404 or 5xx still fails.
+  http_api_expected:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes:
+        - 200
+        - 201
+        - 204
+        - 301
+        - 302
+        - 400
+        - 401
+        - 403
+      valid_http_versions:
+        - HTTP/1.1
+        - HTTP/2.0
+      follow_redirects: true
+      preferred_ip_protocol: ip4
+
+  # Strict 2xx probe kept for any future endpoint that must only be healthy on
+  # successful responses.
   http_2xx:
     prober: http
     timeout: 5s
