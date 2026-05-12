@@ -1,0 +1,102 @@
+services:
+  # ---------------------------------------------------------------
+  # Node.js API. Exposes /metrics (prom-client) and /health.
+  # ---------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      MONGO_URI: mongodb://mongo:27017/city-transition-system
+      JWT_SECRET: local-dev-secret
+      JWT_EXPIRES_IN: 10h
+      CORS_ORIGIN: "http://localhost:3000"
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------
+  # React frontend
+  # ---------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------
+  # MongoDB
+  # ---------------------------------------------------------------
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------
+  # Prometheus — scrapes ONLY the backend's /metrics endpoint
+  # and cAdvisor. No blackbox exporter, no synthetic probes.
+  # ---------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    volumes:
+      - ./monitoring/prometheus/prometheus-docker.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - backend
+      - cadvisor
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------
+  # cAdvisor — per-container CPU and memory metrics
+  # ---------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------
+  # Grafana with auto-provisioned datasource and dashboards.
+  # Open: http://localhost:3001 (login admin / admin)
+  # ---------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.3.1
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards/files:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  prometheus-data:
+  grafana-data:
