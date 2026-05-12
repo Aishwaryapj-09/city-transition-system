@@ -1,0 +1,23 @@
+{
+  "name": "city-transition-system",
+  "private": true,
+  "scripts": {
+    "reports:prepare": "node -e \"require('fs').mkdirSync('devsecops-reports',{recursive:true})\"",
+    "preapi:test": "npm run reports:prepare --silent",
+    "preapi:test:smoke": "npm run reports:prepare --silent",
+    "preapi:test:deployed": "npm run reports:prepare --silent",
+    "preapi:test:docker": "npm run reports:prepare --silent",
+
+    "api:test": "newman run postman/city-transition-api.postman_collection.json -e postman/local.postman_environment.json --reporters cli,json,junit --reporter-json-export devsecops-reports/postman-api-full-report.json --reporter-junit-export devsecops-reports/postman-api-full-report.xml",
+    "api:test:docker": "newman run postman/city-transition-api.postman_collection.json -e postman/docker.postman_environment.json --reporters cli,json,junit --reporter-json-export devsecops-reports/postman-api-docker-report.json --reporter-junit-export devsecops-reports/postman-api-docker-report.xml",
+    "api:test:deployed": "newman run postman/city-transition-api.postman_collection.json -e postman/kubernetes.postman_environment.json --reporters cli,json,junit --reporter-json-export devsecops-reports/postman-api-smoke-report.json --reporter-junit-export devsecops-reports/postman-api-smoke-report.xml",
+
+    "metrics:capture": "node tools/capture-metrics.js",
+    "reports:dashboard": "node tools/generate-dashboards.js",
+    "reports:clean": "node -e \"const fs=require('fs');try{fs.rmSync('devsecops-reports',{recursive:true,force:true});}catch(e){}\""
+  },
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "sonar-scanner": "^3.1.0"
+  }
+}
