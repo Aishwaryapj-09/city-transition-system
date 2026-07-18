@@ -29,10 +29,15 @@ function Register() {
         setMessage("Registration successful! Redirecting...");
         setTimeout(() => navigate("/login"), 1500);
 
-      } else if (response.status === 400) {
-        setMessage(response.data.message || "User already exists.");
-
-      } else {
+      } } else if (response.status === 400) {
+  if (response.data.message) {
+    setMessage(response.data.message);
+  } else if (response.data.errors && response.data.errors.length > 0) {
+    setMessage(response.data.errors[0].msg);
+  } else {
+    setMessage("Registration failed. Please check your details.");
+  }
+}else {
         setMessage("Something went wrong.");
       }
 
