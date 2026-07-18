@@ -29,14 +29,13 @@ app.get("/metrics", metricsHandler);
 app.use(metricsMiddleware);
 
 app.use(express.json({ limit: "10kb" }));
-
 function healthHandler(req, res) {
   res.status(200).json({
     status: "OK",
-    message: "Server running"
+    message: "Server running",
+    pipelineTest: "SYNC-CHECK-18JUL"
   });
 }
-
 // Kubernetes, Jenkins, Blackbox Exporter, and viva demos can use either path.
 app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
